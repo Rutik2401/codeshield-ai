@@ -2,29 +2,61 @@ package com.codeshield.controller;
 
 import com.codeshield.dto.ReviewRequest;
 import com.codeshield.dto.ReviewResponse;
+import com.codeshield.entity.Review;
 import com.codeshield.service.GeminiService;
+import com.codeshield.service.ReviewPersistenceService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class ReviewController {
 
     private final GeminiService geminiService;
-
-    public ReviewController(GeminiService geminiService) {
-        this.geminiService = geminiService;
-    }
+    private final ReviewPersistenceService reviewPersistenceService;
 
     @PostMapping("/review")
     public ResponseEntity<ReviewResponse> reviewCode(@Valid @RequestBody ReviewRequest request) {
         ReviewResponse review = geminiService.analyzeCode(request.getCode(), request.getLanguage());
+        UUID userId = getCurrentUserId();
+        reviewPersistenceService.saveReview(userId, request.getCode(), request.getLanguage(), review);
         return ResponseEntity.ok(review);
+    }
+
+    @GetMapping("/reviews")
+    public ResponseEntity<List<Review>> getUserReviews() {
+        UUID userId = getCurrentUserId();
+        return ResponseEntity.ok(reviewPersistenceService.getUserReviews(userId));
+    }
+
+    @GetMapping("/reviews/{id}")
+    public ResponseEntity<Review> getReview(@PathVariable UUID id) {
+        UUID userId = getCurrentUserId();
+        return reviewPersistenceService.getReviewById(userId, id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/reviews/{id}")
+    public ResponseEntity<Void> deleteReview(@PathVariable UUID id) {
+        UUID userId = getCurrentUserId();
+        reviewPersistenceService.deleteReview(userId, id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("CodeShield AI API is running");
+    }
+
+    private UUID getCurrentUserId() {
+        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }
