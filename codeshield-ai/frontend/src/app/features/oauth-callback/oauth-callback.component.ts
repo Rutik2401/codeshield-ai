@@ -1,0 +1,42 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../core/services/auth.service';
+
+@Component({
+  selector: 'app-oauth-callback',
+  standalone: true,
+  template: `
+    <div class="min-h-screen flex items-center justify-center" style="background-color: var(--bg-primary);">
+      <div class="text-center">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+        <p class="text-sm" style="color: var(--text-secondary);">Completing sign in...</p>
+      </div>
+    </div>
+  `,
+})
+export class OAuthCallbackComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  ngOnInit(): void {
+    const code = this.route.snapshot.queryParamMap.get('code');
+    if (!code) {
+      this.router.navigate(['/']);
+      return;
+    }
+
+    this.http.post<any>('http://localhost:8081/api/v1/auth/oauth2/google/callback', { code })
+      .subscribe({
+        next: (res) => {
+          this.auth.handleOAuthResponse(res);
+          this.router.navigate(['/dashboard']);
+        },
+        error: () => {
+          this.router.navigate(['/']);
+        },
+      });
+  }
+}

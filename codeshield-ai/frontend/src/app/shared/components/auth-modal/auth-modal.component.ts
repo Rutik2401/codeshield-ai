@@ -1,5 +1,4 @@
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -21,7 +20,6 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class AuthModalComponent {
   auth = inject(AuthService);
-  private router = inject(Router);
 
   name = '';
   email = '';
@@ -47,31 +45,19 @@ export class AuthModalComponent {
       if (!this.agreeTerms) { this.error = 'You must agree to the terms.'; return; }
 
       this.isSubmitting = true;
-      setTimeout(() => {
-        const result = this.auth.createAccount(this.name, this.email, this.password);
-        this.isSubmitting = false;
-        if (!result.success) { this.error = result.error!; }
-        else { this.resetForm(); this.router.navigate(['/dashboard']); }
-      }, 800);
+      this.auth.createAccount(this.name, this.email, this.password);
+      this.resetForm();
+      this.isSubmitting = false;
     } else {
       this.isSubmitting = true;
-      setTimeout(() => {
-        const result = this.auth.signIn(this.email, this.password);
-        this.isSubmitting = false;
-        if (!result.success) { this.error = result.error!; }
-        else { this.resetForm(); this.router.navigate(['/dashboard']); }
-      }, 600);
+      this.auth.signIn(this.email, this.password);
+      this.resetForm();
+      this.isSubmitting = false;
     }
   }
 
   googleSignIn(): void {
-    this.isSubmitting = true;
-    setTimeout(() => {
-      this.auth.createAccount('Google User', 'user@gmail.com', 'google-oauth');
-      this.isSubmitting = false;
-      this.resetForm();
-      this.router.navigate(['/dashboard']);
-    }, 800);
+    this.auth.googleSignIn();
   }
 
   onFocus(event: Event): void {

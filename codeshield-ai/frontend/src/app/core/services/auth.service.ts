@@ -1,18 +1,40 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 
 export interface User {
+  id?: string;
   name: string;
   email: string;
   avatar?: string;
 }
 
+interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  user: { id: string; name: string; email: string; avatar: string };
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  isLoggedIn = signal(this.loadUser() !== null);
-  currentUser = signal<User | null>(this.loadUser());
+  private apiUrl = 'http://localhost:8081/api/v1/auth';
+  private http = inject(HttpClient);
+
+  isLoggedIn = signal(this.hasToken());
+  currentUser = signal<User | null>(this.loadStoredUser());
   showAuthModal = signal(false);
   authTab = signal<'signin' | 'create'>('signin');
   toastMessage = signal<string | null>(null);
+
+  private hasToken(): boolean {
+    return !!localStorage.getItem('auth_token');
+  }
+
+  private loadStoredUser(): User | null {
+    try {
+      const raw = localStorage.getItem('auth_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
 
   openSignIn(): void {
     this.authTab.set('signin');
@@ -28,63 +50,68 @@ export class AuthService {
     this.showAuthModal.set(false);
   }
 
-  signIn(email: string, _password: string): { success: boolean; error?: string } {
-    const users = this.getStoredUsers();
-    const user = users.find(u => u.email === email);
-    if (!user) return { success: false, error: 'No account found with this email.' };
-
-    this.setUser(user);
-    this.showToast(`Welcome back, ${user.name.split(' ')[0]}`);
-    return { success: true };
+  signIn(email: string, password: string): void {
+    this.http.post<AuthResponse>(`${this.apiUrl}/signin`, { email, password }).subscribe({
+      next: (res) => {
+        this.storeAuth(res);
+        this.showAuthModal.set(false);
+        this.showToast(`Welcome back, ${res.user.name.split(' ')[0]}`);
+      },
+      error: (err) => {
+        this.toastMessage.set(err.error?.message || 'Invalid credentials');
+      },
+    });
   }
 
-  createAccount(name: string, email: string, _password: string): { success: boolean; error?: string } {
-    const users = this.getStoredUsers();
-    if (users.find(u => u.email === email)) {
-      return { success: false, error: 'An account with this email already exists.' };
-    }
+  createAccount(name: string, email: string, password: string): void {
+    this.http.post<AuthResponse>(`${this.apiUrl}/signup`, { name, email, password }).subscribe({
+      next: (res) => {
+        this.storeAuth(res);
+        this.showAuthModal.set(false);
+        this.showToast(`Welcome, ${res.user.name.split(' ')[0]}!`);
+      },
+      error: (err) => {
+        this.toastMessage.set(err.error?.message || 'Could not create account');
+      },
+    });
+  }
 
-    const user: User = {
-      name,
-      email,
-      avatar: name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-    };
-    users.push(user);
-    localStorage.setItem('codeshield-users', JSON.stringify(users));
-    this.setUser(user);
-    this.showToast(`Welcome, ${user.name.split(' ')[0]}!`);
-    return { success: true };
+  googleSignIn(): void {
+    this.http.get<{ url: string }>(`${this.apiUrl}/oauth2/google/url`)
+      .subscribe({
+        next: (res) => {
+          this.showAuthModal.set(false);
+          window.location.href = res.url;
+        },
+        error: () => {
+          this.toastMessage.set('Google sign-in unavailable');
+        },
+      });
+  }
+
+  handleOAuthResponse(res: any): void {
+    this.storeAuth(res);
+    this.showToast('Welcome!');
   }
 
   signOut(): void {
-    localStorage.removeItem('codeshield-user');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_refresh_token');
+    localStorage.removeItem('auth_user');
     this.currentUser.set(null);
     this.isLoggedIn.set(false);
+  }
+
+  private storeAuth(res: AuthResponse): void {
+    localStorage.setItem('auth_token', res.token);
+    localStorage.setItem('auth_refresh_token', res.refreshToken);
+    localStorage.setItem('auth_user', JSON.stringify(res.user));
+    this.currentUser.set(res.user);
+    this.isLoggedIn.set(true);
   }
 
   private showToast(message: string): void {
     this.toastMessage.set(message);
     setTimeout(() => this.toastMessage.set(null), 3000);
-  }
-
-  private setUser(user: User): void {
-    localStorage.setItem('codeshield-user', JSON.stringify(user));
-    this.currentUser.set(user);
-    this.isLoggedIn.set(true);
-    this.showAuthModal.set(false);
-  }
-
-  private loadUser(): User | null {
-    try {
-      const raw = localStorage.getItem('codeshield-user');
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  }
-
-  private getStoredUsers(): User[] {
-    try {
-      const raw = localStorage.getItem('codeshield-users');
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
   }
 }
