@@ -366,6 +366,17 @@ h3 {
   width: 100%;
 }
 
+/* Footer link hover */
+.footer-link:hover {
+  color: var(--text-primary) !important;
+  transform: translateX(4px);
+}
+
+.footer-link:hover svg {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
 /* ═══════════════════════════════════════════════
    SELECTION
    ═══════════════════════════════════════════════ */

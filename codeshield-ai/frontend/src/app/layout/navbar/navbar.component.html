@@ -1,203 +1,282 @@
-<nav class="sticky top-0 z-50 glass transition-all duration-300"
-     style="border-bottom: 1px solid var(--border-default);">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-14 sm:h-16">
-      <!-- Logo -->
-      <a [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/'" class="flex items-center gap-2 sm:gap-2.5 group">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg transition-shadow"
-             style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+<div class="app-wrapper">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 glass transition-all duration-300"
+       style="border-bottom: 1px solid var(--border-default);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14 sm:h-16">
+
+        <!-- Logo -->
+        <a [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/'"
+           class="flex items-center gap-2 sm:gap-2.5 group">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg transition-shadow"
+               style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8);
+                      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.5 3.64v7.36L12 18.82l-6.5-3.64V7.82L12 4.18z"/>
+              <path d="M12 8a1.5 1.5 0 00-1.5 1.5v3a1.5 1.5 0 003 0v-3A1.5 1.5 0 0012 8zm0 7a1 1 0 100 2 1 1 0 000-2z"/>
+            </svg>
+          </div>
+          <span class="text-base sm:text-lg font-bold tracking-tight" style="color: var(--text-primary);">
+            CodeShield <span style="color: var(--color-primary);">AI</span>
+          </span>
+        </a>
+
+        <!-- Desktop Nav -->
+        <div class="hidden md:flex items-center gap-1">
+
+          <!-- Nav Links -->
+          @for (link of navLinks(); track link.label) {
+            @if (link.fragment) {
+              <a (click)="scrollTo(link.fragment)"
+                 class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                 style="color: var(--text-secondary);">
+                {{ link.label }}
+              </a>
+            } @else {
+              <a [routerLink]="link.path"
+                 routerLinkActive="nav-link-active"
+                 [routerLinkActiveOptions]="link.exact ? {exact: true} : {exact: false}"
+                 class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                 style="color: var(--text-secondary);">
+                {{ link.label }}
+              </a>
+            }
+          }
+
+          <!-- Divider -->
+          <div class="w-px h-6 mx-2" style="background-color: var(--border-default);"></div>
+
+          <!-- Auth: Logged In -->
+          @if (auth.isLoggedIn()) {
+            <div class="relative ml-2">
+              <button (click)="showUserMenu = !showUserMenu"
+                      class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white
+                             transition-transform hover:scale-105 cursor-pointer"
+                      style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
+                {{ auth.currentUser()?.avatar || 'U' }}
+              </button>
+
+              <!-- User Dropdown -->
+              @if (showUserMenu) {
+                <div class="absolute right-0 top-12 w-56 rounded-xl overflow-hidden py-1"
+                     style="background: var(--bg-surface);
+                            border: 1px solid var(--border-default);
+                            box-shadow: var(--shadow-lg);
+                            animation: scaleIn 0.15s ease-out;">
+
+                  <!-- User Info -->
+                  <div class="px-4 py-3 flex items-center gap-3"
+                       style="border-bottom: 1px solid var(--border-default);">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
+                         style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
+                      {{ auth.currentUser()?.avatar || 'U' }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold truncate" style="color: var(--text-primary);">
+                        {{ auth.currentUser()?.name }}
+                      </p>
+                      <p class="text-xs truncate" style="color: var(--text-tertiary);">
+                        {{ auth.currentUser()?.email }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Menu Items -->
+                  <div class="py-1">
+                    <a routerLink="/dashboard" (click)="showUserMenu = false"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
+                       style="color: var(--text-secondary);">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                      </svg>
+                      Dashboard
+                    </a>
+                    <a routerLink="/reviewer" (click)="showUserMenu = false"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
+                       style="color: var(--text-secondary);">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                      </svg>
+                      Reviewer
+                    </a>
+                    <a routerLink="/settings" (click)="showUserMenu = false"
+                       class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
+                       style="color: var(--text-secondary);">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      Settings
+                    </a>
+                  </div>
+
+                  <!-- Sign Out -->
+                  <div style="border-top: 1px solid var(--border-default);">
+                    <button (click)="signOut()"
+                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
+                            style="color: var(--color-critical);">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                      </svg>
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+          <!-- Auth: Logged Out -->
+          } @else {
+            <button (click)="auth.openSignIn()"
+                    class="ml-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:-translate-y-0.5 cursor-pointer"
+                    style="color: var(--text-primary);">
+              Sign in
+            </button>
+            <button (click)="auth.openCreateAccount()"
+                    class="btn-primary text-sm !px-5 !py-2">
+              Get Started Free
+            </button>
+          }
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button (click)="mobileMenuOpen = !mobileMenuOpen"
+                class="md:hidden p-2 rounded-lg transition-colors cursor-pointer"
+                style="color: var(--text-secondary);">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            @if (mobileMenuOpen) {
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            } @else {
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            }
+          </svg>
+        </button>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  @if (mobileMenuOpen) {
+    <div class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+         (click)="closeMobileMenu()"
+         style="animation: fadeIn 0.2s ease-out;">
+    </div>
+  }
+
+  <!-- Mobile Sidebar -->
+  <div class="fixed top-0 left-0 z-50 h-full w-72 md:hidden transition-transform duration-300 ease-out"
+       [class]="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'"
+       style="background: var(--bg-surface);
+              border-right: 1px solid var(--border-default);
+              box-shadow: var(--shadow-lg);">
+
+    <!-- Sidebar Header -->
+    <div class="flex items-center justify-between px-5 h-14"
+         style="border-bottom: 1px solid var(--border-default);">
+      <a [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/'"
+         (click)="closeMobileMenu()"
+         class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+             style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8);">
+          <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.5 3.64v7.36L12 18.82l-6.5-3.64V7.82L12 4.18z"/>
-            <path d="M12 8a1.5 1.5 0 00-1.5 1.5v3a1.5 1.5 0 003 0v-3A1.5 1.5 0 0012 8zm0 7a1 1 0 100 2 1 1 0 000-2z"/>
           </svg>
         </div>
-        <span class="text-base sm:text-lg font-bold tracking-tight" style="color: var(--text-primary);">
+        <span class="font-bold text-sm" style="color: var(--text-primary);">
           CodeShield <span style="color: var(--color-primary);">AI</span>
         </span>
       </a>
+      <button (click)="closeMobileMenu()"
+              class="p-1.5 rounded-lg cursor-pointer"
+              style="color: var(--text-tertiary);">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
 
-      <!-- Desktop Nav -->
-      <div class="hidden md:flex items-center gap-1">
-        @for (link of navLinks(); track link.path) {
-          <a [routerLink]="link.path"
+    <!-- User Info -->
+    @if (auth.isLoggedIn()) {
+      <div class="px-5 py-4 flex items-center gap-3"
+           style="border-bottom: 1px solid var(--border-default);">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0"
+             style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
+          {{ auth.currentUser()?.avatar || 'U' }}
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold truncate" style="color: var(--text-primary);">
+            {{ auth.currentUser()?.name }}
+          </p>
+          <p class="text-xs truncate" style="color: var(--text-tertiary);">
+            {{ auth.currentUser()?.email }}
+          </p>
+        </div>
+      </div>
+    }
+
+    <!-- Mobile Nav Links -->
+    <div class="py-4 px-3 space-y-1">
+      @for (link of navLinks(); track link.label) {
+        @if (link.fragment) {
+          <a (click)="scrollTo(link.fragment)"
+             class="block px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer"
+             style="color: var(--text-secondary);">
+            {{ link.label }}
+          </a>
+        } @else {
+          <a [routerLink]="link.path" (click)="closeMobileMenu()"
              routerLinkActive="nav-link-active"
              [routerLinkActiveOptions]="link.exact ? {exact: true} : {exact: false}"
-             class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-all"
+             class="block px-4 py-3 rounded-xl text-sm font-medium transition-colors"
              style="color: var(--text-secondary);">
             {{ link.label }}
           </a>
         }
+      }
 
-        <!-- Divider -->
-        <div class="w-px h-6 mx-2" style="background-color: var(--border-default);"></div>
+      @if (auth.isLoggedIn()) {
+        <a routerLink="/settings" (click)="closeMobileMenu()"
+           routerLinkActive="nav-link-active"
+           class="block px-4 py-3 rounded-xl text-sm font-medium transition-colors"
+           style="color: var(--text-secondary);">
+          Settings
+        </a>
+      }
+    </div>
 
-        <!-- Auth buttons -->
-        @if (auth.isLoggedIn()) {
-          <div class="relative ml-2">
-            <button (click)="showUserMenu = !showUserMenu"
-                    class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white transition-transform hover:scale-105 cursor-pointer"
-                    style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
-              {{ auth.currentUser()?.avatar || 'U' }}
-            </button>
-            @if (showUserMenu) {
-              <div class="absolute right-0 top-12 w-56 rounded-xl overflow-hidden py-1"
-                   style="background: var(--bg-surface); border: 1px solid var(--border-default); box-shadow: var(--shadow-lg); animation: scaleIn 0.15s ease-out;">
-                <!-- User info -->
-                <div class="px-4 py-3 flex items-center gap-3" style="border-bottom: 1px solid var(--border-default);">
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
-                       style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
-                    {{ auth.currentUser()?.avatar || 'U' }}
-                  </div>
-                  <div class="min-w-0">
-                    <p class="text-sm font-semibold truncate" style="color: var(--text-primary);">{{ auth.currentUser()?.name }}</p>
-                    <p class="text-xs truncate" style="color: var(--text-tertiary);">{{ auth.currentUser()?.email }}</p>
-                  </div>
-                </div>
-                <!-- Menu items -->
-                <div class="py-1">
-                  <a routerLink="/dashboard" (click)="showUserMenu = false"
-                     class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
-                     style="color: var(--text-secondary);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                    Dashboard
-                  </a>
-                  <a routerLink="/reviewer" (click)="showUserMenu = false"
-                     class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
-                     style="color: var(--text-secondary);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                    Reviewer
-                  </a>
-                  <a routerLink="/settings" (click)="showUserMenu = false"
-                     class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
-                     style="color: var(--text-secondary);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Settings
-                  </a>
-                </div>
-                <!-- Sign out -->
-                <div style="border-top: 1px solid var(--border-default);">
-                  <button (click)="signOut()"
-                          class="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer"
-                          style="color: var(--color-critical);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
-        } @else {
-          <button (click)="auth.openSignIn()"
-                  class="ml-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:-translate-y-0.5 cursor-pointer"
-                  style="color: var(--text-primary);">
-            Sign in
-          </button>
-          <button (click)="auth.openCreateAccount()"
-                  class="btn-primary text-sm !px-5 !py-2">
-            Get Started Free
-          </button>
-        }
-      </div>
-
-      <!-- Mobile menu button -->
-      <button (click)="mobileMenuOpen = !mobileMenuOpen"
-              class="md:hidden p-2 rounded-lg transition-colors cursor-pointer"
-              style="color: var(--text-secondary);">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          @if (mobileMenuOpen) {
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          } @else {
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-          }
-        </svg>
-      </button>
+    <!-- Mobile Auth -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 space-y-2"
+         style="border-top: 1px solid var(--border-default);">
+      @if (auth.isLoggedIn()) {
+        <button (click)="signOut()"
+                class="w-full text-left px-4 py-3 rounded-xl text-sm font-medium
+                       transition-colors cursor-pointer flex items-center gap-2"
+                style="color: var(--color-critical);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sign Out
+        </button>
+      } @else {
+        <button (click)="auth.openSignIn(); closeMobileMenu()"
+                class="w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer"
+                style="color: var(--text-secondary);">
+          Sign in
+        </button>
+        <button (click)="auth.openCreateAccount(); closeMobileMenu()"
+                class="w-full text-center btn-primary text-sm !py-3">
+          Get Started Free
+        </button>
+      }
     </div>
   </div>
-</nav>
 
-<!-- Mobile Overlay -->
-@if (mobileMenuOpen) {
-  <div class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
-       (click)="mobileMenuOpen = false"
-       style="animation: fadeIn 0.2s ease-out;"></div>
-}
-
-<!-- Mobile Slide-in Menu -->
-<div class="fixed top-0 left-0 z-50 h-full w-72 md:hidden transition-transform duration-300 ease-out"
-     [class]="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'"
-     style="background: var(--bg-surface); border-right: 1px solid var(--border-default); box-shadow: var(--shadow-lg);">
-  <!-- Mobile menu header -->
-  <div class="flex items-center justify-between px-5 h-14" style="border-bottom: 1px solid var(--border-default);">
-    <a [routerLink]="auth.isLoggedIn() ? '/dashboard' : '/'" (click)="mobileMenuOpen = false" class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-xl flex items-center justify-center"
-           style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8);">
-        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.5 3.64v7.36L12 18.82l-6.5-3.64V7.82L12 4.18z"/>
-        </svg>
-      </div>
-      <span class="font-bold text-sm" style="color: var(--text-primary);">CodeShield <span style="color: var(--color-primary);">AI</span></span>
-    </a>
-    <button (click)="mobileMenuOpen = false" class="p-1.5 rounded-lg cursor-pointer" style="color: var(--text-tertiary);">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- User info (logged in) -->
-  @if (auth.isLoggedIn()) {
-    <div class="px-5 py-4 flex items-center gap-3" style="border-bottom: 1px solid var(--border-default);">
-      <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0"
-           style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
-        {{ auth.currentUser()?.avatar || 'U' }}
-      </div>
-      <div class="min-w-0">
-        <p class="text-sm font-semibold truncate" style="color: var(--text-primary);">{{ auth.currentUser()?.name }}</p>
-        <p class="text-xs truncate" style="color: var(--text-tertiary);">{{ auth.currentUser()?.email }}</p>
-      </div>
-    </div>
-  }
-
-  <!-- Nav links -->
-  <div class="py-4 px-3 space-y-1">
-    @for (link of navLinks(); track link.path) {
-      <a [routerLink]="link.path" (click)="mobileMenuOpen = false"
-         routerLinkActive="nav-link-active"
-         [routerLinkActiveOptions]="link.exact ? {exact: true} : {exact: false}"
-         class="block px-4 py-3 rounded-xl text-sm font-medium transition-colors"
-         style="color: var(--text-secondary);">
-        {{ link.label }}
-      </a>
-    }
-    @if (auth.isLoggedIn()) {
-      <a routerLink="/settings" (click)="mobileMenuOpen = false"
-         routerLinkActive="nav-link-active"
-         class="block px-4 py-3 rounded-xl text-sm font-medium transition-colors"
-         style="color: var(--text-secondary);">
-        Settings
-      </a>
-    }
-  </div>
-
-  <!-- Auth section -->
-  <div class="absolute bottom-0 left-0 right-0 p-4 space-y-2" style="border-top: 1px solid var(--border-default);">
-    @if (auth.isLoggedIn()) {
-      <button (click)="signOut()"
-              class="w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer flex items-center gap-2"
-              style="color: var(--color-critical);">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        Sign Out
-      </button>
-    } @else {
-      <button (click)="auth.openSignIn(); mobileMenuOpen = false"
-              class="w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer"
-              style="color: var(--text-secondary);">
-        Sign in
-      </button>
-      <button (click)="auth.openCreateAccount(); mobileMenuOpen = false"
-              class="w-full text-center btn-primary text-sm !py-3">
-        Get Started Free
-      </button>
-    }
-  </div>
 </div>

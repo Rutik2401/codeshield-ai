@@ -6,27 +6,47 @@ import { AuthService } from '../../core/services/auth.service';
   selector: 'app-navbar',
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
-  templateUrl: './navbar.component.html'
+  templateUrl: './navbar.component.html',
 })
 export class NavbarComponent {
   auth = inject(AuthService);
-  private router = inject(Router);
+
   mobileMenuOpen = false;
   showUserMenu = false;
+
+  private router = inject(Router);
 
   navLinks = computed(() => {
     if (this.auth.isLoggedIn()) {
       return [
         { path: '/dashboard', label: 'Dashboard', exact: false },
         { path: '/reviewer', label: 'Reviewer', exact: false },
-        { path: '/pricing', label: 'Pricing', exact: false },
       ];
     }
+
     return [
-      { path: '/', label: 'Home', exact: true },
+      { label: 'Features', fragment: 'features' },
+      { label: 'How It Works', fragment: 'how-it-works' },
       { path: '/pricing', label: 'Pricing', exact: false },
     ];
   });
+
+  scrollTo(id: string): void {
+    this.closeMobileMenu();
+
+    const isHome = this.router.url === '/' || this.router.url.startsWith('/#');
+    if (isHome) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      this.router.navigate(['/'], { fragment: id }).then(() => {
+        setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 300);
+      });
+    }
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+  }
 
   signOut(): void {
     this.auth.signOut();

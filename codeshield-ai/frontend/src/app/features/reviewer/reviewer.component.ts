@@ -32,6 +32,7 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
   review = signal<ReviewResponse | null>(null);
   error = signal<string | null>(null);
   mobilePanel: 'editor' | 'results' = 'editor';
+  copiedIssueId: string | null = null;
 
   // AI thinking state
   thinkingStep = signal(0);
@@ -147,6 +148,21 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
     if (ext && extMap[ext]) {
       this.selectedLanguage = extMap[ext];
     }
+  }
+
+  copyFix(fixedCode: string): void {
+    navigator.clipboard.writeText(fixedCode).then(() => {
+      const issue = this.review()?.issues.find(i => i.fixedCode === fixedCode);
+      if (issue) {
+        this.copiedIssueId = issue.id;
+        setTimeout(() => this.copiedIssueId = null, 2000);
+      }
+    });
+  }
+
+  applyFix(fixedCode: string): void {
+    this.code = fixedCode;
+    this.mobilePanel = 'editor';
   }
 
   exportPdf(): void {
