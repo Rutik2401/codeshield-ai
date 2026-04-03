@@ -1,0 +1,56 @@
+<!-- Gradient top border -->
+<footer class="relative mt-auto" style="background-color: var(--bg-surface);">
+  <div class="absolute top-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent, var(--color-primary), var(--color-accent), transparent);"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
+      <!-- Brand -->
+      <div class="text-center sm:text-left">
+        <div class="flex items-center gap-2.5 mb-4 justify-center sm:justify-start">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+               style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8);">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.5 3.64v7.36L12 18.82l-6.5-3.64V7.82L12 4.18z"/>
+              <path d="M12 8a1.5 1.5 0 00-1.5 1.5v3a1.5 1.5 0 003 0v-3A1.5 1.5 0 0012 8zm0 7a1 1 0 100 2 1 1 0 000-2z"/>
+            </svg>
+          </div>
+          <span class="font-bold" style="color: var(--text-primary);">
+            CodeShield <span style="color: var(--color-primary);">AI</span>
+          </span>
+        </div>
+        <p class="text-sm leading-relaxed max-w-xs mx-auto sm:mx-0" style="color: var(--text-secondary);">
+          AI-powered code reviewer and security auditor. Review. Audit. Protect.
+        </p>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="text-center sm:text-left">
+        <h4 class="text-sm font-semibold uppercase tracking-wider mb-4 sm:mb-5" style="color: var(--text-primary);">Product</h4>
+        <ul class="space-y-2.5 sm:space-y-3">
+          <li><a routerLink="/" class="text-sm transition-colors hover:underline" style="color: var(--text-secondary);">Home</a></li>
+          <li><a routerLink="/reviewer" class="text-sm transition-colors hover:underline" style="color: var(--text-secondary);">Code Reviewer</a></li>
+          <li><a routerLink="/dashboard" class="text-sm transition-colors hover:underline" style="color: var(--text-secondary);">Dashboard</a></li>
+          <li><a routerLink="/pricing" class="text-sm transition-colors hover:underline" style="color: var(--text-secondary);">Pricing</a></li>
+        </ul>
+      </div>
+
+      <!-- Resources -->
+      <div class="text-center sm:text-left">
+        <h4 class="text-sm font-semibold uppercase tracking-wider mb-4 sm:mb-5" style="color: var(--text-primary);">Resources</h4>
+        <ul class="space-y-2.5 sm:space-y-3">
+          <li><a href="https://github.com/Rutik2401/codeshield-ai" target="_blank" class="text-sm transition-colors hover:underline" style="color: var(--text-secondary);">GitHub</a></li>
+          <li><a href="https://github.com/Rutik2401/codeshield-ai#readme" target="_blank" class="text-sm transition-colors hover:underline" style="color: var(--text-secondary);">Documentation</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="mt-8 sm:mt-12 pt-5 sm:pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4"
+         style="border-top: 1px solid var(--border-default);">
+      <p class="text-xs" style="color: var(--text-tertiary);">&copy; 2026 CodeShield AI. Built by Rutik.</p>
+      <p class="text-xs hidden sm:block" style="color: var(--text-tertiary);">
+        Press <kbd class="px-1.5 py-0.5 rounded text-xs font-mono" style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">Ctrl+K</kbd> for commands
+      </p>
+    </div>
+  </div>
+</footer>

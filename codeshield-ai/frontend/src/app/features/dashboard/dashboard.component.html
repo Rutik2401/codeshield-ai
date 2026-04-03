@@ -1,0 +1,120 @@
+<div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+  <!-- Page header -->
+  <div class="mb-6 sm:mb-10" #pageHeader>
+    <h1 class="text-xl sm:text-3xl font-bold text-white">Dashboard</h1>
+    <p class="text-gray-400 mt-0.5 sm:mt-1 text-xs sm:text-sm">Track your code review history and quality trends</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-10" #statsGrid>
+    @for (stat of statsCards(); track stat.label) {
+      <div class="stat-card glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 group cursor-default">
+        <div class="flex items-center justify-between mb-2 sm:mb-3">
+          <p class="text-xs sm:text-sm font-medium text-gray-400 truncate">{{ stat.label }}</p>
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shrink-0 ml-2"
+               [class]="stat.iconBg">
+            <span class="text-sm sm:text-lg">{{ stat.icon }}</span>
+          </div>
+        </div>
+        <p class="text-2xl sm:text-4xl font-bold tracking-tight" [style.color]="stat.color">
+          {{ stat.value }}
+        </p>
+        <p class="text-[11px] sm:text-xs text-gray-500 mt-1 sm:mt-2">{{ stat.sub }}</p>
+      </div>
+    }
+  </div>
+
+  <!-- Review History -->
+  <div class="glass-card rounded-xl sm:rounded-2xl overflow-hidden" #historySection>
+    <div class="p-4 sm:p-6 border-b border-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+      <div>
+        <h2 class="text-base sm:text-lg font-bold text-white">Review History</h2>
+        <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5">{{ totalReviews() }} total reviews</p>
+      </div>
+      <div class="flex gap-2 sm:gap-3 items-center w-full sm:w-auto">
+        <div class="relative flex-1 sm:flex-none">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [(ngModel)]="searchQuery" placeholder="Search..."
+                 class="w-full sm:w-48 sm:focus:w-56 pl-10 pr-4 py-2 text-sm rounded-xl bg-slate-800/50 text-white outline-none focus:ring-2 focus:ring-primary/30 border border-slate-700/50 transition-all">
+        </div>
+        @if (historyService.history().length) {
+          <button (click)="clearAll()"
+                  class="px-3 py-2 text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer whitespace-nowrap">
+            Clear All
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (filteredHistory().length === 0) {
+      <div class="p-10 sm:p-16 text-center">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center mb-3 sm:mb-4">
+          <svg class="w-7 h-7 sm:w-8 sm:h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <p class="text-gray-400 font-medium mb-1 text-sm">No reviews yet</p>
+        <p class="text-xs sm:text-sm text-gray-500">
+          Head to the <a routerLink="/reviewer" class="text-primary hover:underline font-medium">Reviewer</a> to get started.
+        </p>
+      </div>
+    } @else {
+      <div class="divide-y divide-slate-700/50">
+        @for (item of filteredHistory(); track item.id; let i = $index) {
+          <!-- Desktop row -->
+          <div class="hidden sm:flex history-item p-5 hover:bg-slate-800/30 transition-all items-center justify-between gap-4 group">
+            <div class="flex items-center gap-5 flex-1 min-w-0">
+              <app-score-circle [score]="item.review.score" [size]="48" [strokeWidth]="4" />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="text-xs px-2.5 py-1 rounded-lg bg-primary/8 text-primary font-semibold uppercase tracking-wide">{{ item.language }}</span>
+                  <span class="text-xs text-gray-500">{{ item.review.metrics.totalIssues }} issues</span>
+                  @if (item.review.metrics.critical > 0) {
+                    <span class="text-xs text-critical font-medium">{{ item.review.metrics.critical }} critical</span>
+                  }
+                </div>
+                <p class="text-sm text-gray-400 truncate">{{ item.review.summary }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 shrink-0">
+              <span class="text-xs text-gray-500">{{ item.createdAt | timeAgo }}</span>
+              <button (click)="deleteReview(item.id)"
+                      class="p-2 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                      title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile card -->
+          <div class="sm:hidden p-3 hover:bg-slate-800/30 transition-all">
+            <div class="flex items-center gap-3">
+              <app-score-circle [score]="item.review.score" [size]="40" [strokeWidth]="3" />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 mb-1">
+                  <span class="text-[11px] px-2 py-0.5 rounded-md bg-primary/8 text-primary font-semibold uppercase">{{ item.language }}</span>
+                  <span class="text-[11px] text-gray-500">{{ item.review.metrics.totalIssues }} issues</span>
+                  @if (item.review.metrics.critical > 0) {
+                    <span class="text-[11px] text-critical font-medium">{{ item.review.metrics.critical }} crit</span>
+                  }
+                </div>
+                <p class="text-xs text-gray-400 truncate">{{ item.review.summary }}</p>
+              </div>
+              <button (click)="deleteReview(item.id)"
+                      class="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                      title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<div class="space-y-4">
+  @for (i of lines; track i) {
+    <div class="h-4 rounded-lg overflow-hidden" [style.width]="getWidth(i)">
+      <div class="h-full bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700 animate-shimmer"
+           style="background-size: 200% 100%;"></div>
+    </div>
+  }
+</div>
