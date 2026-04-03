@@ -21,16 +21,20 @@ import java.util.UUID;
 public class ReviewPersistenceService {
 
     private final ReviewRepository reviewRepository;
+    private final com.codeshield.repository.UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     public Review saveReview(UUID userId, String code, String language, ReviewResponse response) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found. Please sign in again."));
+
         String issuesJson = serialize(response.getIssues());
         String securityAuditJson = serialize(response.getSecurityAudit());
 
         ReviewResponse.Metrics metrics = response.getMetrics();
 
         Review review = Review.builder()
-                .user(User.builder().id(userId).build())
+                .user(user)
                 .code(code)
                 .language(language)
                 .summary(response.getSummary())

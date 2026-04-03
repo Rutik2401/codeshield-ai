@@ -1,12 +1,16 @@
 package com.codeshield.controller;
 
+import com.codeshield.dto.ExportRequest;
 import com.codeshield.dto.ReviewRequest;
 import com.codeshield.dto.ReviewResponse;
 import com.codeshield.entity.Review;
 import com.codeshield.service.GeminiService;
+import com.codeshield.service.PdfExportService;
 import com.codeshield.service.ReviewPersistenceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +24,7 @@ import java.util.UUID;
 public class ReviewController {
 
     private final GeminiService geminiService;
+    private final PdfExportService pdfExportService;
     private final ReviewPersistenceService reviewPersistenceService;
 
     @PostMapping("/review")
@@ -49,6 +54,17 @@ public class ReviewController {
         UUID userId = getCurrentUserId();
         reviewPersistenceService.deleteReview(userId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportPdf(@RequestBody ExportRequest request) {
+        byte[] pdf = pdfExportService.generatePdf(request.getReview(), request.getLanguage());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "codeshield-review.pdf");
+
+        return ResponseEntity.ok().headers(headers).body(pdf);
     }
 
     @GetMapping("/health")
