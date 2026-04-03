@@ -1,0 +1,15 @@
+server:
+  port: 8081
+
+app:
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: gemini-2.5-flash
+  cors:
+    allowed-origins: ${FRONTEND_URL:http://localhost:4200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
