@@ -9,12 +9,15 @@ import { ReviewResponse, Issue } from '../../models/review.model';
 import { SUPPORTED_LANGUAGES } from '../../core/constants/language.constants';
 import { SeverityBadgeComponent } from '../../shared/components/severity-badge/severity-badge.component';
 import { ScoreCircleComponent } from '../../shared/components/score-circle/score-circle.component';
+import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { gsap } from 'gsap';
+
+declare const monaco: any;
 
 @Component({
   selector: 'app-reviewer',
   standalone: true,
-  imports: [FormsModule, SeverityBadgeComponent, ScoreCircleComponent],
+  imports: [FormsModule, SeverityBadgeComponent, ScoreCircleComponent, MonacoEditorModule],
   templateUrl: './reviewer.component.html',
   styles: [`
     :host { display: block; }
@@ -73,6 +76,19 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
   languages = SUPPORTED_LANGUAGES;
   selectedLanguage = 'javascript';
   code = '';
+  editorOptions = {
+    theme: 'vs-dark',
+    language: 'javascript',
+    minimap: { enabled: false },
+    automaticLayout: true,
+    fontSize: 14,
+    lineNumbers: 'on' as const,
+    scrollBeyondLastLine: false,
+    roundedSelection: true,
+    padding: { top: 16 },
+    wordWrap: 'on' as const,
+    tabSize: 2,
+  };
   review = signal<ReviewResponse | null>(null);
   error = signal<string | null>(null);
   mobilePanel: 'editor' | 'results' = 'editor';
@@ -91,6 +107,26 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
     { label: 'Generating fix suggestions...' },
     { label: 'Building quality report...' },
   ];
+
+  onLanguageChange(): void {
+    this.editorOptions = { ...this.editorOptions, language: this.mapLanguage(this.selectedLanguage) };
+  }
+
+  private mapLanguage(lang: string): string {
+    const map: Record<string, string> = {
+      javascript: 'javascript', typescript: 'typescript', python: 'python',
+      java: 'java', csharp: 'csharp', cpp: 'cpp', go: 'go', rust: 'rust',
+      php: 'php', ruby: 'ruby', swift: 'swift', kotlin: 'kotlin',
+      html: 'html', css: 'css', sql: 'sql', shell: 'shell',
+    };
+    return map[lang] || 'plaintext';
+  }
+
+  onEditorInit(editor: any): void {
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      this.reviewCode();
+    });
+  }
 
   ngAfterViewInit(): void {}
 
