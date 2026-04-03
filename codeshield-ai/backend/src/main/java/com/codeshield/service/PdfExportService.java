@@ -192,99 +192,185 @@ public class PdfExportService {
     }
 
     private void buildIssueCard(Document doc, ReviewResponse.Issue issue, int idx) throws DocumentException {
-        // Entire issue in a bordered table cell to keep together and look like a card
+        Color sc = sevColor(issue.getSeverity());
+
+        // Card wrapper
         PdfPTable card = new PdfPTable(1);
         card.setWidthPercentage(100);
-        card.setSpacingBefore(idx > 1 ? 10 : 0);
+        card.setSpacingBefore(idx > 1 ? 12 : 0);
         card.setSpacingAfter(4);
         card.setKeepTogether(true);
 
-        PdfPCell cardCell = cell(WHITE, 14);
+        PdfPCell cardCell = cell(WHITE, 0);
         cardCell.setBorderColor(BORDER);
         cardCell.setBorderWidth(0.75f);
-
-        // Severity left border accent
-        Color sc = sevColor(issue.getSeverity());
         cardCell.setBorderColorLeft(sc);
-        cardCell.setBorderWidthLeft(3f);
+        cardCell.setBorderWidthLeft(3.5f);
 
-        // Header row: SEVERITY | type | Line N
-        Phrase header = new Phrase();
-        header.add(badge(issue.getSeverity().toUpperCase(), sc));
-        header.add(new Chunk("   " + issue.getType(),
-                new Font(Font.HELVETICA, 8, Font.NORMAL, MUTED)));
-        header.add(new Chunk("   \u2022   Line " + issue.getLine(),
-                new Font(Font.HELVETICA, 8, Font.NORMAL, MUTED)));
-        Paragraph headerP = new Paragraph(header);
-        headerP.setSpacingAfter(6);
-        cardCell.addElement(headerP);
+        // Top colored strip: severity + type + line
+        PdfPTable headerBar = new PdfPTable(new float[]{3, 7});
+        headerBar.setWidthPercentage(100);
+
+        // Left: severity pill
+        PdfPCell sevPill = cell(sevBg(issue.getSeverity()), 8);
+        sevPill.setBorder(Rectangle.NO_BORDER);
+        sevPill.setPaddingLeft(14);
+        Paragraph sevP = new Paragraph(issue.getSeverity().toUpperCase(),
+                new Font(Font.HELVETICA, 8, Font.BOLD, sc));
+        sevPill.addElement(sevP);
+        headerBar.addCell(sevPill);
+
+        // Right: type + line
+        PdfPCell metaCell = cell(sevBg(issue.getSeverity()), 8);
+        metaCell.setBorder(Rectangle.NO_BORDER);
+        metaCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        Paragraph metaP = new Paragraph(issue.getType() + "   \u2022   Line " + issue.getLine(),
+                new Font(Font.HELVETICA, 8, Font.NORMAL, MUTED));
+        metaP.setAlignment(Element.ALIGN_RIGHT);
+        metaCell.addElement(metaP);
+        headerBar.addCell(metaCell);
+
+        cardCell.addElement(headerBar);
+
+        // Body padding wrapper
+        PdfPTable bodyWrap = new PdfPTable(1);
+        bodyWrap.setWidthPercentage(100);
+        PdfPCell bodyCell = cell(null, 14);
+        bodyCell.setBorder(Rectangle.NO_BORDER);
+        bodyCell.setPaddingTop(10);
 
         // Title
-        Paragraph titleP = new Paragraph(idx + ". " + issue.getTitle(),
+        Paragraph titleP = new Paragraph(idx + ".  " + issue.getTitle(),
                 new Font(Font.HELVETICA, 11, Font.BOLD, DARK));
-        titleP.setSpacingAfter(5);
-        cardCell.addElement(titleP);
+        titleP.setSpacingAfter(6);
+        bodyCell.addElement(titleP);
 
         // Description
         if (issue.getDescription() != null && !issue.getDescription().isBlank()) {
             Paragraph descP = new Paragraph(issue.getDescription(),
                     new Font(Font.HELVETICA, 9.5f, Font.NORMAL, BODY));
-            descP.setLeading(14);
-            descP.setSpacingAfter(6);
-            cardCell.addElement(descP);
+            descP.setLeading(15);
+            descP.setSpacingAfter(8);
+            bodyCell.addElement(descP);
         }
 
-        // Suggestion in green box
+        // Suggestion box
         if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
-            PdfPTable sugBox = new PdfPTable(1);
+            PdfPTable sugBox = new PdfPTable(new float[]{0.3f, 9.7f});
             sugBox.setWidthPercentage(100);
-            PdfPCell sugCell = cell(GREEN_BG, 8);
-            sugCell.setBorder(Rectangle.NO_BORDER);
-            Paragraph sugP = new Paragraph("\u2713  " + issue.getSuggestion(),
+
+            // Green icon cell
+            PdfPCell iconC = cell(GREEN_BG, 8);
+            iconC.setBorder(Rectangle.NO_BORDER);
+            iconC.setHorizontalAlignment(Element.ALIGN_CENTER);
+            iconC.setVerticalAlignment(Element.ALIGN_TOP);
+            Paragraph icon = new Paragraph("\u2713",
+                    new Font(Font.HELVETICA, 10, Font.BOLD, GREEN));
+            icon.setAlignment(Element.ALIGN_CENTER);
+            iconC.addElement(icon);
+            sugBox.addCell(iconC);
+
+            // Suggestion text cell
+            PdfPCell sugTextC = cell(GREEN_BG, 8);
+            sugTextC.setBorder(Rectangle.NO_BORDER);
+            sugTextC.setPaddingLeft(4);
+            Paragraph sugP = new Paragraph(issue.getSuggestion(),
                     new Font(Font.HELVETICA, 9, Font.NORMAL, GREEN));
-            sugP.setLeading(13);
-            sugCell.addElement(sugP);
-            sugBox.addCell(sugCell);
-            cardCell.addElement(sugBox);
+            sugP.setLeading(14);
+            sugTextC.addElement(sugP);
+            sugBox.addCell(sugTextC);
+
+            bodyCell.addElement(sugBox);
         }
+
+        bodyWrap.addCell(bodyCell);
+        cardCell.addElement(bodyWrap);
 
         card.addCell(cardCell);
         doc.add(card);
 
-        // Code block outside card (allows page splitting)
+        // Code block (separate, allows page splitting)
         if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
             buildCodeBlock(doc, issue.getFixedCode());
         }
     }
 
     private void buildCodeBlock(Document doc, String code) throws DocumentException {
-        PdfPTable table = new PdfPTable(1);
-        table.setWidthPercentage(100);
-        table.setSpacingBefore(2);
-        table.setSpacingAfter(6);
-        table.setSplitLate(false);
-        table.setSplitRows(true);
+        Color editorBg = new Color(0x1E, 0x1E, 0x2E);     // VS Code dark bg
+        Color titleBarBg = new Color(0x2D, 0x2D, 0x3F);    // Title bar
+        Color gutterBg = new Color(0x1E, 0x1E, 0x2E);      // Gutter
+        Color codeTextCol = new Color(0xCD, 0xD6, 0xF4);   // Code text
+        Color lineNumCol = new Color(0x58, 0x5B, 0x70);    // Line numbers
+        Color dotRed = new Color(0xFF, 0x56, 0x55);
+        Color dotYellow = new Color(0xFE, 0xBC, 0x2E);
+        Color dotGreen = new Color(0x27, 0xCA, 0x40);
+        Color tabTextCol = new Color(0x94, 0xA3, 0xB8);
 
-        PdfPCell c = cell(CODE_BG, 10);
-        c.setBorderColor(BORDER);
-        c.setBorderWidth(0.5f);
+        String[] lines = code.split("\n");
 
-        // Label
-        Paragraph label = new Paragraph("SUGGESTED FIX",
-                new Font(Font.HELVETICA, 7, Font.BOLD, GREEN));
-        label.setSpacingAfter(6);
-        c.addElement(label);
+        // === Title bar (traffic lights + tab name) — added directly to doc ===
+        PdfPTable titleBar = new PdfPTable(1);
+        titleBar.setWidthPercentage(94);
+        titleBar.setHorizontalAlignment(Element.ALIGN_CENTER);
+        titleBar.setSpacingBefore(6);
+        titleBar.setSpacingAfter(0);
 
-        // Code lines
-        Font codeFont = new Font(Font.COURIER, 8, Font.NORMAL, new Color(0x1F, 0x29, 0x37));
-        for (String line : code.split("\n")) {
-            Paragraph lp = new Paragraph(line.isEmpty() ? " " : line, codeFont);
-            lp.setLeading(11);
-            c.addElement(lp);
+        PdfPCell titleCell = new PdfPCell();
+        titleCell.setBackgroundColor(titleBarBg);
+        titleCell.setBorder(Rectangle.NO_BORDER);
+        titleCell.setPadding(8);
+        titleCell.setPaddingLeft(12);
+
+        Phrase titlePhrase = new Phrase();
+        // Traffic light dots
+        titlePhrase.add(new Chunk("\u25CF ", new Font(Font.HELVETICA, 9, Font.BOLD, dotRed)));
+        titlePhrase.add(new Chunk("\u25CF ", new Font(Font.HELVETICA, 9, Font.BOLD, dotYellow)));
+        titlePhrase.add(new Chunk("\u25CF", new Font(Font.HELVETICA, 9, Font.BOLD, dotGreen)));
+        titlePhrase.add(new Chunk("       suggested-fix",
+                new Font(Font.HELVETICA, 8, Font.NORMAL, tabTextCol)));
+        Paragraph titleP = new Paragraph(titlePhrase);
+        titleCell.addElement(titleP);
+        titleBar.addCell(titleCell);
+        doc.add(titleBar);
+
+        // === Code body (line numbers + code) — flat table, no nesting ===
+        PdfPTable codeTable = new PdfPTable(new float[]{0.8f, 9.2f});
+        codeTable.setWidthPercentage(94);
+        codeTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+        codeTable.setSpacingBefore(0);
+        codeTable.setSpacingAfter(12);
+        codeTable.setSplitLate(false);
+        codeTable.setSplitRows(true);
+
+        Font numFont = new Font(Font.COURIER, 7.5f, Font.NORMAL, lineNumCol);
+        Font codeFont = new Font(Font.COURIER, 8, Font.NORMAL, codeTextCol);
+
+        for (int i = 0; i < lines.length; i++) {
+            // Line number cell
+            PdfPCell numCell = new PdfPCell(new Phrase(String.valueOf(i + 1), numFont));
+            numCell.setBackgroundColor(gutterBg);
+            numCell.setBorder(Rectangle.NO_BORDER);
+            numCell.setPaddingLeft(10);
+            numCell.setPaddingRight(8);
+            numCell.setPaddingTop(1.5f);
+            numCell.setPaddingBottom(1.5f);
+            numCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            numCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            codeTable.addCell(numCell);
+
+            // Code line cell
+            String lineText = lines[i].isEmpty() ? " " : lines[i];
+            PdfPCell lineCell = new PdfPCell(new Phrase(lineText, codeFont));
+            lineCell.setBackgroundColor(editorBg);
+            lineCell.setBorder(Rectangle.NO_BORDER);
+            lineCell.setPaddingLeft(10);
+            lineCell.setPaddingTop(1.5f);
+            lineCell.setPaddingBottom(1.5f);
+            lineCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            codeTable.addCell(lineCell);
         }
 
-        table.addCell(c);
-        doc.add(table);
+        doc.add(codeTable);
     }
 
     // ── Security Audit ──
