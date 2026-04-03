@@ -15,7 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
     provideMonacoEditor({
-      baseUrl: './assets/monaco',
+      baseUrl: './assets/monaco/vs',
     }),
     provideCharts(withDefaultRegisterables()),
   ]

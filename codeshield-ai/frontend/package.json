@@ -27,6 +27,7 @@
     "gsap": "^3.14.2",
     "html2pdf.js": "^0.14.0",
     "marked": "^17.0.5",
+    "monaco-editor": "^0.55.1",
     "ng2-charts": "^10.0.0",
     "ngx-markdown": "^21.1.0",
     "ngx-monaco-editor-v2": "^21.1.4",
