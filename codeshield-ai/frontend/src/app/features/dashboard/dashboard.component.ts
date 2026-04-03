@@ -6,11 +6,13 @@ import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
 import { FormsModule } from '@angular/forms';
 import { AnimationService } from '../../core/services/animation.service';
 import { gsap } from 'gsap';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration } from 'chart.js';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, ScoreCircleComponent, TimeAgoPipe, FormsModule],
+  imports: [RouterLink, ScoreCircleComponent, TimeAgoPipe, FormsModule, BaseChartDirective],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements AfterViewInit, OnDestroy {
@@ -20,6 +22,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('pageHeader', { static: true }) pageHeader!: ElementRef;
   @ViewChild('statsGrid', { static: true }) statsGrid!: ElementRef;
+  @ViewChild('chartsSection', { static: true }) chartsSection!: ElementRef;
   @ViewChild('historySection', { static: true }) historySection!: ElementRef;
 
   totalReviews = computed(() => this.historyService.history().length);
@@ -73,6 +76,126 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     },
   ]);
 
+  // Score trend line chart
+  scoreTrendConfig = computed<ChartConfiguration<'line'>>(() => {
+    const history = this.historyService.history().slice().reverse(); // oldest first
+    return {
+      type: 'line',
+      data: {
+        labels: history.map((_, i) => `#${i + 1}`),
+        datasets: [{
+          data: history.map(h => h.review.score),
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#3B82F6',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1E293B',
+            titleColor: '#F8FAFC',
+            bodyColor: '#94A3B8',
+            borderColor: '#334155',
+            borderWidth: 1,
+          },
+        },
+        scales: {
+          x: { grid: { color: 'rgba(51,65,85,0.3)' }, ticks: { color: '#64748B', font: { size: 11 } } },
+          y: { min: 0, max: 100, grid: { color: 'rgba(51,65,85,0.3)' }, ticks: { color: '#64748B', font: { size: 11 } } },
+        },
+      },
+    };
+  });
+
+  // Severity doughnut chart
+  severityConfig = computed<ChartConfiguration<'doughnut'>>(() => {
+    const h = this.historyService.history();
+    const critical = h.reduce((s, i) => s + i.review.metrics.critical, 0);
+    const high = h.reduce((s, i) => s + i.review.metrics.high, 0);
+    const medium = h.reduce((s, i) => s + i.review.metrics.medium, 0);
+    const low = h.reduce((s, i) => s + i.review.metrics.low, 0);
+    return {
+      type: 'doughnut',
+      data: {
+        labels: ['Critical', 'High', 'Medium', 'Low'],
+        datasets: [{
+          data: [critical, high, medium, low],
+          backgroundColor: ['#EF4444', '#F97316', '#EAB308', '#3B82F6'],
+          borderColor: '#0F172A',
+          borderWidth: 3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#94A3B8', padding: 16, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 8 },
+          },
+          tooltip: {
+            backgroundColor: '#1E293B',
+            titleColor: '#F8FAFC',
+            bodyColor: '#94A3B8',
+            borderColor: '#334155',
+            borderWidth: 1,
+          },
+        },
+      },
+    };
+  });
+
+  // Language bar chart
+  languageConfig = computed<ChartConfiguration<'bar'>>(() => {
+    const counts: Record<string, number> = {};
+    this.historyService.history().forEach(h => {
+      counts[h.language] = (counts[h.language] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    return {
+      type: 'bar',
+      data: {
+        labels: sorted.map(([lang]) => lang),
+        datasets: [{
+          data: sorted.map(([, count]) => count),
+          backgroundColor: ['#3B82F6', '#6366F1', '#8B5CF6', '#22C55E', '#EAB308', '#F97316'],
+          borderRadius: 8,
+          borderSkipped: false,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1E293B',
+            titleColor: '#F8FAFC',
+            bodyColor: '#94A3B8',
+            borderColor: '#334155',
+            borderWidth: 1,
+          },
+        },
+        scales: {
+          x: { grid: { color: 'rgba(51,65,85,0.3)' }, ticks: { color: '#64748B', stepSize: 1 } },
+          y: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 12 } } },
+        },
+      },
+    };
+  });
+
+  hasChartData = computed(() => this.historyService.history().length > 0);
+
   filteredHistory = computed(() => {
     const q = this.searchQuery.toLowerCase();
     if (!q) return this.historyService.history();
@@ -88,6 +211,14 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     // Stagger stat cards
     this.anim.staggerCards(this.statsGrid.nativeElement, '.stat-card', { stagger: 0.1 });
+
+    // Charts section
+    if (this.chartsSection) {
+      this.anim.fadeInUp(this.chartsSection.nativeElement, {
+        trigger: this.chartsSection.nativeElement,
+        delay: 0.15,
+      });
+    }
 
     // History section
     this.anim.fadeInUp(this.historySection.nativeElement, {
