@@ -5,7 +5,7 @@ import { HistoryService } from '../../core/services/history.service';
 import { ExportService } from '../../core/services/export.service';
 import { LoadingService } from '../../core/services/loading.service';
 import { AnimationService } from '../../core/services/animation.service';
-import { ReviewResponse, Issue } from '../../models/review.model';
+import { ReviewResponse } from '../../models/review.model';
 import { SUPPORTED_LANGUAGES } from '../../core/constants/language.constants';
 import { SeverityBadgeComponent } from '../../shared/components/severity-badge/severity-badge.component';
 import { ScoreCircleComponent } from '../../shared/components/score-circle/score-circle.component';
@@ -42,10 +42,6 @@ declare const monaco: any;
         flex: 1;
         overflow: hidden;
       }
-      .panel-left textarea {
-        height: 100% !important;
-        min-height: unset !important;
-      }
       .panel-right {
         width: 50%;
         overflow-y: auto;
@@ -57,12 +53,7 @@ declare const monaco: any;
       .panel-right::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.3); border-radius: 3px; }
       .panel-right::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.5); }
     }
-
-    textarea.code-editor {
-      tab-size: 2;
-      -moz-tab-size: 2;
-    }
-  `]
+  `],
 })
 export class ReviewerComponent implements AfterViewInit, OnDestroy {
   private geminiService = inject(GeminiService);
@@ -76,23 +67,37 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
   languages = SUPPORTED_LANGUAGES;
   selectedLanguage = 'javascript';
   code = '';
-  editorOptions = {
+  private editorInstance: any = null;
+
+  editorOptions: Record<string, any> = {
     theme: 'vs-dark',
     language: 'javascript',
     minimap: { enabled: false },
     automaticLayout: true,
     fontSize: 14,
-    lineNumbers: 'on' as const,
+    lineNumbers: 'on',
     scrollBeyondLastLine: false,
     roundedSelection: true,
     padding: { top: 16 },
-    wordWrap: 'on' as const,
+    wordWrap: 'on',
     tabSize: 2,
+    suggestOnTriggerCharacters: true,
+    quickSuggestions: true,
+    formatOnPaste: true,
+    bracketPairColorization: { enabled: true },
+    guides: { bracketPairs: true, indentation: true },
+    smoothScrolling: true,
+    cursorBlinking: 'smooth',
+    cursorSmoothCaretAnimation: 'on',
   };
+
   review = signal<ReviewResponse | null>(null);
   error = signal<string | null>(null);
   mobilePanel: 'editor' | 'results' = 'editor';
   copiedIssueId: string | null = null;
+  appliedIssueId: string | null = null;
+  lineCount = signal(0);
+  charCount = signal(0);
 
   // AI thinking state
   thinkingStep = signal(0);
@@ -113,18 +118,25 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
   }
 
   private mapLanguage(lang: string): string {
-    const map: Record<string, string> = {
-      javascript: 'javascript', typescript: 'typescript', python: 'python',
-      java: 'java', csharp: 'csharp', cpp: 'cpp', go: 'go', rust: 'rust',
-      php: 'php', ruby: 'ruby', swift: 'swift', kotlin: 'kotlin',
-      html: 'html', css: 'css', sql: 'sql', shell: 'shell',
-    };
-    return map[lang] || 'plaintext';
+    const found = this.languages.find(l => l.id === lang);
+    return found?.monacoId || 'plaintext';
   }
 
   onEditorInit(editor: any): void {
+    this.editorInstance = editor;
+
+    // Ctrl+Enter to review
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       this.reviewCode();
+    });
+
+    // Track line/char count
+    editor.onDidChangeModelContent(() => {
+      const model = editor.getModel();
+      if (model) {
+        this.lineCount.set(model.getLineCount());
+        this.charCount.set(model.getValue().length);
+      }
     });
   }
 
@@ -150,8 +162,6 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
         this.review.set(result);
         this.historyService.addReview(this.code, this.selectedLanguage, result);
         this.loading.hide();
-
-        // Animate results appearing
         setTimeout(() => this.animateResults(), 50);
       },
       error: (err) => {
@@ -159,7 +169,7 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
         this.error.set('Failed to review code. Please try again.');
         this.loading.hide();
         console.error('Review error:', err);
-      }
+      },
     });
   }
 
@@ -190,18 +200,10 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
   private animateResults(): void {
     const panel = this.resultsPanel?.nativeElement;
     if (!panel) return;
-
     const cards = panel.querySelectorAll('.result-card');
     gsap.fromTo(cards,
       { opacity: 0, y: 25, scale: 0.97 },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.5,
-        stagger: 0.1,
-        ease: 'power2.out',
-      }
+      { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.1, ease: 'power2.out' },
     );
   }
 
@@ -213,6 +215,7 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
     reader.onload = () => {
       this.code = reader.result as string;
       this.detectLanguage(file.name);
+      this.onLanguageChange();
     };
     reader.readAsText(file);
   }
@@ -230,23 +233,92 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  copyFix(fixedCode: string): void {
+  copyFix(fixedCode: string, issueId: string): void {
     navigator.clipboard.writeText(fixedCode).then(() => {
-      const issue = this.review()?.issues.find(i => i.fixedCode === fixedCode);
-      if (issue) {
-        this.copiedIssueId = issue.id;
-        setTimeout(() => this.copiedIssueId = null, 2000);
-      }
+      this.copiedIssueId = issueId;
+      setTimeout(() => (this.copiedIssueId = null), 2000);
     });
   }
 
-  applyFix(fixedCode: string): void {
-    this.code = fixedCode;
+  applyFix(fixedCode: string, issueId: string, issueLine: number): void {
+    const model = this.editorInstance?.getModel();
+    if (!model) return;
+
+    const originalLines = model.getValue().split('\n');
+    const fixLines = fixedCode.split('\n');
+
+    // If fix is most of the file (>70%), it's a full replacement
+    if (fixLines.length > originalLines.length * 0.7) {
+      model.setValue(fixedCode);
+      this.code = model.getValue();
+      this.showApplied(issueId);
+      return;
+    }
+
+    // Partial fix — find where to insert using line anchoring
+    const range = this.findFixRange(originalLines, fixLines, issueLine - 1);
+
+    // Monaco Range is 1-indexed
+    const startLine = range.start + 1;
+    const endLine = Math.min(range.end + 1, originalLines.length);
+    const endCol = model.getLineMaxColumn(endLine);
+
+    const editRange = new monaco.Range(startLine, 1, endLine, endCol);
+    model.pushEditOperations([], [{ range: editRange, text: fixedCode }], () => null);
+
+    this.code = model.getValue();
+    this.editorInstance.revealLineInCenter(startLine);
+    this.showApplied(issueId);
+  }
+
+  private findFixRange(origLines: string[], fixLines: string[], issueLine: number): { start: number; end: number } {
+    const firstFix = fixLines[0]?.trim();
+    const lastFix = fixLines[fixLines.length - 1]?.trim();
+
+    // Search near issue line for the first line of the fix
+    let start = this.searchNear(origLines, firstFix, issueLine, 15);
+    if (start === -1) start = Math.max(0, issueLine - 1);
+
+    // Search for the last line of the fix to find the end
+    let end = this.searchNear(origLines, lastFix, start + fixLines.length - 1, 10);
+    if (end === -1 || end < start) {
+      end = Math.min(origLines.length - 1, start + fixLines.length - 1);
+    }
+
+    return { start, end };
+  }
+
+  private searchNear(lines: string[], target: string, center: number, radius: number): number {
+    if (!target) return -1;
+    const safeCenter = Math.max(0, Math.min(lines.length - 1, center));
+    for (let d = 0; d <= radius; d++) {
+      const before = safeCenter - d;
+      const after = safeCenter + d;
+      if (before >= 0 && lines[before].trim() === target) return before;
+      if (after < lines.length && lines[after].trim() === target) return after;
+    }
+    return -1;
+  }
+
+  private showApplied(issueId: string): void {
+    this.appliedIssueId = issueId;
+    setTimeout(() => (this.appliedIssueId = null), 2000);
     this.mobilePanel = 'editor';
   }
 
+  clearEditor(): void {
+    this.code = '';
+    this.review.set(null);
+    this.error.set(null);
+    if (this.editorInstance) {
+      this.editorInstance.getModel()?.setValue('');
+      this.editorInstance.focus();
+    }
+  }
+
   exportPdf(): void {
-    this.exportService.exportAsPdf('review-results');
+    const r = this.review();
+    if (r) this.exportService.exportPdfFromBackend(r, this.selectedLanguage);
   }
 
   exportMarkdown(): void {

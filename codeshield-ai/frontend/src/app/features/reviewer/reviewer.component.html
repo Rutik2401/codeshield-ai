@@ -1,5 +1,6 @@
 <div class="reviewer-layout">
-  <!-- Page header -->
+
+  <!-- Header -->
   <div class="px-3 sm:px-6 lg:px-6 py-3 sm:py-5">
     <div class="flex items-center justify-between">
       <div>
@@ -7,7 +8,7 @@
         <p class="text-gray-400 mt-0.5 text-xs sm:text-sm">Paste your code and get instant AI-powered analysis</p>
       </div>
       @if (review()) {
-        <div class="hidden sm:flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2">
           <button (click)="exportPdf()"
                   class="px-4 py-2 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors flex items-center gap-2 cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -17,6 +18,11 @@
                   class="px-4 py-2 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors flex items-center gap-2 cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Markdown
+          </button>
+          <button (click)="clearEditor()"
+                  class="px-4 py-2 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-red-400 transition-colors flex items-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Clear
           </button>
         </div>
       }
@@ -49,15 +55,15 @@
     </div>
   }
 
-  <!-- ═══════ Split Layout ═══════ -->
+  <!-- Split Layout -->
   <div class="split-container flex flex-col lg:flex-row">
 
-    <!-- ═══════ LEFT: Code Editor Panel ═══════ -->
+    <!-- LEFT: Editor -->
     <div class="panel-left px-3 sm:px-0"
          [class.hidden]="(review() || loading.isLoading()) && mobilePanel === 'results'"
          [class.lg:flex]="true">
 
-      <!-- Controls bar -->
+      <!-- Toolbar -->
       <div class="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 border-b border-slate-700/30"
            style="background: rgba(15, 23, 42, 0.4);">
         <div class="flex items-center gap-1.5">
@@ -68,6 +74,7 @@
 
         <div class="w-px h-4 bg-slate-700/50 mx-1"></div>
 
+        <!-- Language Select -->
         <div class="relative">
           <select [(ngModel)]="selectedLanguage" (ngModelChange)="onLanguageChange()"
                   class="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-xs font-medium text-gray-300 focus:ring-2 focus:ring-primary/50 outline-none cursor-pointer"
@@ -81,23 +88,32 @@
           </svg>
         </div>
 
+        <!-- Upload -->
         <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-slate-700/30 transition-all group"
                style="border: 1px solid rgba(51, 65, 85, 0.5);">
           <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
           </svg>
-          <span class="text-xs text-gray-400 group-hover:text-primary transition-colors">Upload</span>
+          <span class="text-xs text-gray-400 group-hover:text-primary transition-colors hidden sm:inline">Upload</span>
           <input type="file" class="hidden" (change)="onFileUpload($event)" accept=".js,.ts,.py,.java,.cpp,.go,.rs,.php,.rb,.cs,.swift,.kt,.html,.css,.sql,.sh">
         </label>
 
         <div class="flex-1"></div>
+
+        <!-- Line/Char count -->
+        @if (code) {
+          <span class="text-[10px] text-gray-500 hidden sm:block font-mono">
+            {{ lineCount() }} lines &middot; {{ charCount() }} chars
+          </span>
+          <div class="w-px h-3 bg-slate-700/50 mx-1 hidden sm:block"></div>
+        }
 
         <span class="text-[11px] text-gray-500 hidden sm:block">
           <kbd class="px-1.5 py-0.5 rounded bg-slate-800/80 font-mono border border-slate-700/50">Ctrl+Enter</kbd>
         </span>
       </div>
 
-      <!-- Code textarea -->
+      <!-- Monaco Editor -->
       <div class="code-area relative group">
         <ngx-monaco-editor
           [(ngModel)]="code"
@@ -108,14 +124,12 @@
         </ngx-monaco-editor>
       </div>
 
-      <!-- Review button + error -->
+      <!-- Review Button -->
       <div class="px-3 sm:px-5 py-3 border-t border-slate-700/30" style="background: rgba(15, 23, 42, 0.4);">
         <button (click)="reviewCode()"
                 [disabled]="loading.isLoading() || !code.trim()"
                 class="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 cursor-pointer"
-                [class]="loading.isLoading()
-                  ? 'bg-slate-800 text-gray-400'
-                  : 'btn-primary'">
+                [class]="loading.isLoading() ? 'bg-slate-800 text-gray-400' : 'btn-primary'">
           @if (loading.isLoading()) {
             <div class="flex items-center gap-3">
               <div class="relative w-4 h-4">
@@ -143,18 +157,17 @@
       </div>
     </div>
 
-    <!-- ═══════ RIGHT: Results Panel (Scrollable) ═══════ -->
+    <!-- RIGHT: Results -->
     <div id="review-results" class="panel-right" #resultsPanel
          [class.hidden]="(review() || loading.isLoading()) && mobilePanel === 'editor'"
          [class.lg:block]="true">
 
       <div class="p-3 sm:p-5 space-y-4">
         @if (loading.isLoading()) {
-          <!-- AI Thinking State -->
+          <!-- AI Thinking -->
           <div class="glass-card rounded-2xl p-5 sm:p-8 overflow-hidden relative">
             <div class="absolute inset-0 rounded-2xl"
                  style="background: linear-gradient(90deg, rgba(37,99,235,0.1), rgba(16,185,129,0.1), rgba(139,92,246,0.1)); background-size: 200% 100%; animation: shimmer 3s linear infinite;"></div>
-
             <div class="relative space-y-4 sm:space-y-6">
               <div class="flex items-center gap-3 mb-4 sm:mb-6">
                 <div class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -193,7 +206,8 @@
             </div>
           </div>
         } @else if (review()) {
-          <!-- ═══ Score & Summary ═══ -->
+
+          <!-- Score & Summary -->
           <div class="result-card glass-card rounded-2xl p-4 sm:p-6">
             <div class="flex items-start gap-4 sm:gap-5">
               <app-score-circle [score]="review()!.score" [size]="72" [strokeWidth]="6" class="sm:hidden" />
@@ -204,6 +218,7 @@
               </div>
             </div>
 
+            <!-- Metrics -->
             <div class="mt-4 flex gap-2 flex-wrap">
               @if (review()!.metrics.critical > 0) {
                 <span class="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
@@ -226,9 +241,16 @@
                 </span>
               }
             </div>
+
+            <!-- Language tag -->
+            <div class="mt-3 flex items-center gap-2 text-[11px] text-gray-500">
+              <span class="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-semibold uppercase">{{ selectedLanguage }}</span>
+              <span>&middot;</span>
+              <span>{{ review()!.issues.length }} issues found</span>
+            </div>
           </div>
 
-          <!-- ═══ Issues List ═══ -->
+          <!-- Issues -->
           @for (issue of review()!.issues; track issue.id; let i = $index) {
             <div class="result-card glass-card rounded-2xl p-4 sm:p-5 severity-glow-{{ issue.severity }} hover:scale-[1.005] transition-transform duration-300">
               <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -240,6 +262,7 @@
               <h4 class="font-semibold text-white text-sm sm:text-base mb-1 sm:mb-1.5">{{ issue.title }}</h4>
               <p class="text-xs sm:text-sm text-gray-400 leading-relaxed mb-2 sm:mb-3">{{ issue.description }}</p>
 
+              <!-- Suggestion -->
               <div class="flex items-start gap-2 text-xs sm:text-sm">
                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -247,6 +270,7 @@
                 <span class="text-accent font-medium">{{ issue.suggestion }}</span>
               </div>
 
+              <!-- Fix Code -->
               @if (issue.fixedCode) {
                 <details class="mt-3 sm:mt-4 group/fix">
                   <summary class="text-xs sm:text-sm text-primary cursor-pointer font-medium flex items-center gap-1 hover:gap-2 transition-all">
@@ -257,7 +281,9 @@
                   </summary>
                   <div class="relative mt-2 sm:mt-3">
                     <div class="absolute top-2 right-2 flex gap-1.5 z-10">
-                      <button (click)="copyFix(issue.fixedCode!)"
+
+                      <!-- Copy -->
+                      <button (click)="copyFix(issue.fixedCode!, issue.id)"
                               class="p-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-gray-400 hover:text-white transition-colors cursor-pointer"
                               [title]="copiedIssueId === issue.id ? 'Copied!' : 'Copy fix'">
                         @if (copiedIssueId === issue.id) {
@@ -270,13 +296,25 @@
                           </svg>
                         }
                       </button>
-                      <button (click)="applyFix(issue.fixedCode!)"
-                              class="px-2 py-1 rounded-lg bg-accent/20 hover:bg-accent/30 text-accent text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
+
+                      <!-- Apply -->
+                      <button (click)="applyFix(issue.fixedCode!, issue.id, issue.line)"
+                              class="px-2 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                              [class]="appliedIssueId === issue.id
+                                ? 'bg-accent/30 text-accent'
+                                : 'bg-accent/20 hover:bg-accent/30 text-accent'"
                               title="Apply fix to editor">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        Apply
+                        @if (appliedIssueId === issue.id) {
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                          </svg>
+                          Applied
+                        } @else {
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                          </svg>
+                          Apply
+                        }
                       </button>
                     </div>
                     <pre class="p-3 sm:p-4 rounded-xl bg-slate-900/80 text-xs sm:text-sm text-gray-300 overflow-x-auto font-mono border border-slate-700/50"><code>{{ issue.fixedCode }}</code></pre>
@@ -286,11 +324,10 @@
             </div>
           }
 
-          <!-- ═══ Security Audit ═══ -->
+          <!-- Security Audit -->
           @if (review()!.securityAudit.vulnerabilities.length) {
             <div class="result-card glass-card rounded-2xl p-4 sm:p-5 border-2 border-critical/20 relative overflow-hidden">
               <div class="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent pointer-events-none"></div>
-
               <div class="relative">
                 <h3 class="text-base sm:text-lg font-bold text-critical mb-4 flex items-center gap-2 sm:gap-3 flex-wrap">
                   <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-critical/10 flex items-center justify-center">
@@ -343,11 +380,16 @@
             </button>
             <button (click)="exportMarkdown()"
                     class="flex-1 py-3 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors cursor-pointer">
-              Export Markdown
+              Export MD
+            </button>
+            <button (click)="clearEditor()"
+                    class="flex-1 py-3 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-red-400 transition-colors cursor-pointer">
+              Clear
             </button>
           </div>
+
         } @else {
-          <!-- ═══ Empty State ═══ -->
+          <!-- Empty State -->
           <div class="glass-card rounded-2xl p-10 sm:p-16 text-center relative overflow-hidden lg:mt-[15vh]">
             <div class="absolute inset-0 bg-gradient-to-br from-primary/3 to-accent/3 pointer-events-none"></div>
             <div class="relative">
@@ -357,7 +399,13 @@
                 </svg>
               </div>
               <h3 class="text-base sm:text-lg font-semibold text-gray-400 mb-2">Paste your code to begin</h3>
-              <p class="text-xs sm:text-sm text-gray-500">AI-powered analysis results will appear here</p>
+              <p class="text-xs sm:text-sm text-gray-500 mb-4">AI-powered analysis results will appear here</p>
+              <div class="flex flex-wrap gap-2 justify-center text-[10px] text-gray-600">
+                <span class="px-2 py-1 rounded-md bg-slate-800/50">16 languages</span>
+                <span class="px-2 py-1 rounded-md bg-slate-800/50">OWASP Top 10</span>
+                <span class="px-2 py-1 rounded-md bg-slate-800/50">Auto-fix</span>
+                <span class="px-2 py-1 rounded-md bg-slate-800/50">PDF export</span>
+              </div>
             </div>
           </div>
         }

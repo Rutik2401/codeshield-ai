@@ -1,8 +1,12 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ReviewResponse } from '../../models/review.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
+  private http = inject(HttpClient);
+  private apiUrl = environment.apiUrl;
 
   exportAsMarkdown(review: ReviewResponse, language: string): void {
     let md = `# CodeShield AI - Code Review Report\n\n`;
@@ -39,32 +43,22 @@ export class ExportService {
     this.downloadFile(md, `codeshield-review-${Date.now()}.md`, 'text/markdown;charset=utf-8');
   }
 
-  async exportAsPdf(elementId: string): Promise<void> {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-
-    try {
-      const mod = await import('html2pdf.js');
-      const html2pdf = mod.default ?? mod;
-
-      await html2pdf()
-        .set({
-          margin: [10, 10, 10, 10],
-          filename: `codeshield-review-${Date.now()}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#0F172A',
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        })
-        .from(element)
-        .save();
-    } catch (err) {
-      console.error('PDF export failed, using print fallback:', err);
-      this.printFallback(element);
-    }
+  exportPdfFromBackend(review: ReviewResponse, language: string): void {
+    this.http.post(`${this.apiUrl}/export/pdf`, { review, language }, {
+      responseType: 'blob',
+    }).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `codeshield-review-${Date.now()}.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('PDF export failed:', err);
+      },
+    });
   }
 
   private downloadFile(content: string, filename: string, type: string): void {
@@ -75,24 +69,5 @@ export class ExportService {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
-  }
-
-  private printFallback(element: HTMLElement): void {
-    const win = window.open('', '_blank');
-    if (!win) return;
-
-    win.document.write(`
-      <html>
-        <head>
-          <title>CodeShield AI - Review Report</title>
-          <style>
-            body { font-family: system-ui, sans-serif; padding: 24px; background: #0F172A; color: #F8FAFC; }
-          </style>
-        </head>
-        <body>${element.innerHTML}</body>
-      </html>
-    `);
-    win.document.close();
-    win.print();
   }
 }
