@@ -1,28 +1,45 @@
 <div class="reviewer-layout">
 
   <!-- Header -->
-  <div class="px-3 sm:px-6 lg:px-6 py-3 sm:py-5">
+  <div class="px-4 sm:px-6 py-3 sm:py-4 shrink-0">
     <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl sm:text-2xl font-bold text-white">Code Reviewer</h1>
-        <p class="text-gray-400 mt-0.5 text-xs sm:text-sm">Paste your code and get instant AI-powered analysis</p>
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+             style="background: linear-gradient(135deg, var(--color-primary), #6366F1);">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-white leading-tight">Code Reviewer</h1>
+          <p class="text-[11px] sm:text-xs text-gray-500 leading-tight">Paste your code and get instant AI-powered analysis</p>
+        </div>
       </div>
       @if (review()) {
-        <div class="hidden sm:flex items-center gap-2">
-          <button (click)="exportPdf()"
-                  class="px-4 py-2 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors flex items-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <div class="flex items-center gap-1.5">
+          <button (click)="exportPdf()" title="Export PDF"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+                  style="color: var(--text-secondary); border: 1px solid var(--border-default);"
+                  onmouseover="this.style.borderColor='var(--color-primary)'; this.style.color='var(--color-primary)'; this.style.background='rgba(59,130,246,0.08)'"
+                  onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'; this.style.background='transparent'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             PDF
           </button>
-          <button (click)="exportMarkdown()"
-                  class="px-4 py-2 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors flex items-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Markdown
+          <button (click)="exportMarkdown()" title="Export Markdown"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+                  style="color: var(--text-secondary); border: 1px solid var(--border-default);"
+                  onmouseover="this.style.borderColor='var(--color-primary)'; this.style.color='var(--color-primary)'; this.style.background='rgba(59,130,246,0.08)'"
+                  onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'; this.style.background='transparent'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            MD
           </button>
-          <button (click)="clearEditor()"
-                  class="px-4 py-2 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-red-400 transition-colors flex items-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            Clear
+          <button (click)="clearEditor()" title="New Review"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+                  style="color: var(--text-secondary); border: 1px solid var(--border-default);"
+                  onmouseover="this.style.borderColor='var(--color-accent)'; this.style.color='var(--color-accent)'; this.style.background='rgba(34,197,94,0.08)'"
+                  onmouseout="this.style.borderColor='var(--border-default)'; this.style.color='var(--text-secondary)'; this.style.background='transparent'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New
           </button>
         </div>
       }
@@ -31,22 +48,20 @@
 
   <!-- Mobile Panel Toggle -->
   @if (review() || loading.isLoading()) {
-    <div class="flex lg:hidden mx-3 sm:mx-6 mb-3 p-1 rounded-xl" style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">
+    <div class="flex lg:hidden mx-3 mt-2 mb-2 p-1 rounded-xl" style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">
       <button (click)="mobilePanel = 'editor'"
-              class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
               [style.background]="mobilePanel === 'editor' ? 'var(--bg-surface)' : 'transparent'"
-              [style.color]="mobilePanel === 'editor' ? 'var(--text-primary)' : 'var(--text-tertiary)'"
-              [style.box-shadow]="mobilePanel === 'editor' ? 'var(--shadow-sm)' : 'none'">
+              [style.color]="mobilePanel === 'editor' ? 'var(--text-primary)' : 'var(--text-tertiary)'">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
         </svg>
         Editor
       </button>
       <button (click)="mobilePanel = 'results'"
-              class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
               [style.background]="mobilePanel === 'results' ? 'var(--bg-surface)' : 'transparent'"
-              [style.color]="mobilePanel === 'results' ? 'var(--text-primary)' : 'var(--text-tertiary)'"
-              [style.box-shadow]="mobilePanel === 'results' ? 'var(--shadow-sm)' : 'none'">
+              [style.color]="mobilePanel === 'results' ? 'var(--text-primary)' : 'var(--text-tertiary)'">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
@@ -56,104 +71,110 @@
   }
 
   <!-- Split Layout -->
-  <div class="split-container flex flex-col lg:flex-row">
+  <div class="split-container">
 
-    <!-- LEFT: Editor -->
-    <div class="panel-left px-3 sm:px-0"
+    <!-- LEFT: VS Code Editor Window -->
+    <div class="panel-left p-2 sm:p-3 lg:pr-1.5"
          [class.hidden]="(review() || loading.isLoading()) && mobilePanel === 'results'"
          [class.lg:flex]="true">
 
-      <!-- Toolbar -->
-      <div class="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 border-b border-slate-700/30"
-           style="background: rgba(15, 23, 42, 0.4);">
-        <div class="flex items-center gap-1.5">
-          <div class="w-3 h-3 rounded-full bg-red-500/60"></div>
-          <div class="w-3 h-3 rounded-full bg-yellow-500/60"></div>
-          <div class="w-3 h-3 rounded-full bg-green-500/60"></div>
-        </div>
+      <div class="editor-window">
 
-        <div class="w-px h-4 bg-slate-700/50 mx-1"></div>
-
-        <!-- Language Select -->
-        <div class="relative">
-          <select [(ngModel)]="selectedLanguage" (ngModelChange)="onLanguageChange()"
-                  class="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-xs font-medium text-gray-300 focus:ring-2 focus:ring-primary/50 outline-none cursor-pointer"
-                  style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(51, 65, 85, 0.5);">
-            @for (lang of languages; track lang.id) {
-              <option [value]="lang.id">{{ lang.name }}</option>
-            }
-          </select>
-          <svg class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </div>
-
-        <!-- Upload -->
-        <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-slate-700/30 transition-all group"
-               style="border: 1px solid rgba(51, 65, 85, 0.5);">
-          <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-          </svg>
-          <span class="text-xs text-gray-400 group-hover:text-primary transition-colors hidden sm:inline">Upload</span>
-          <input type="file" class="hidden" (change)="onFileUpload($event)" accept=".js,.ts,.py,.java,.cpp,.go,.rs,.php,.rb,.cs,.swift,.kt,.html,.css,.sql,.sh">
-        </label>
-
-        <div class="flex-1"></div>
-
-        <!-- Line/Char count -->
-        @if (code) {
-          <span class="text-[10px] text-gray-500 hidden sm:block font-mono">
-            {{ lineCount() }} lines &middot; {{ charCount() }} chars
-          </span>
-          <div class="w-px h-3 bg-slate-700/50 mx-1 hidden sm:block"></div>
-        }
-
-        <span class="text-[11px] text-gray-500 hidden sm:block">
-          <kbd class="px-1.5 py-0.5 rounded bg-slate-800/80 font-mono border border-slate-700/50">Ctrl+Enter</kbd>
-        </span>
-      </div>
-
-      <!-- Monaco Editor -->
-      <div class="code-area relative group">
-        <ngx-monaco-editor
-          [(ngModel)]="code"
-          [options]="editorOptions"
-          (onInit)="onEditorInit($event)"
-          class="w-full h-full"
-          style="min-height: 300px;">
-        </ngx-monaco-editor>
-      </div>
-
-      <!-- Review Button -->
-      <div class="px-3 sm:px-5 py-3 border-t border-slate-700/30" style="background: rgba(15, 23, 42, 0.4);">
-        <button (click)="reviewCode()"
-                [disabled]="loading.isLoading() || !code.trim()"
-                class="w-full py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 cursor-pointer"
-                [class]="loading.isLoading() ? 'bg-slate-800 text-gray-400' : 'btn-primary'">
-          @if (loading.isLoading()) {
-            <div class="flex items-center gap-3">
-              <div class="relative w-4 h-4">
-                <div class="absolute inset-0 rounded-full border-2 border-primary/20"></div>
-                <div class="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-              </div>
-              <span class="text-sm">{{ thinkingText() }}</span>
-            </div>
-          } @else {
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            Review Code
-          }
-        </button>
-
-        @if (error()) {
-          <div class="mt-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-center gap-2">
-            <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-            </svg>
-            {{ error() }}
+        <!-- Title Bar -->
+        <div class="editor-titlebar flex items-center gap-3 px-4 py-2.5">
+          <!-- Traffic lights -->
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 rounded-full" style="background: #FF5F57;"></div>
+            <div class="w-3 h-3 rounded-full" style="background: #FEBC2E;"></div>
+            <div class="w-3 h-3 rounded-full" style="background: #28C840;"></div>
           </div>
-        }
+
+          <div class="w-px h-3.5" style="background: rgba(69,71,90,0.5);"></div>
+
+          <!-- Language Select -->
+          <div class="relative">
+            <select [(ngModel)]="selectedLanguage" (ngModelChange)="onLanguageChange()"
+                    class="appearance-none pl-2.5 pr-7 py-1 rounded-md text-xs font-medium outline-none cursor-pointer"
+                    style="background: rgba(69,71,90,0.4); border: 1px solid rgba(69,71,90,0.5); color: #CDD6F4;">
+              @for (lang of languages; track lang.id) {
+                <option [value]="lang.id">{{ lang.name }}</option>
+              }
+            </select>
+            <svg class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style="color: #6C7086;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+
+          <!-- Upload -->
+          <label class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-all"
+                 style="border: 1px solid rgba(69,71,90,0.4);"
+                 onmouseover="this.style.background='rgba(69,71,90,0.4)'"
+                 onmouseout="this.style.background='transparent'">
+            <svg class="w-3.5 h-3.5" style="color: #6C7086;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            <span class="text-xs hidden sm:inline" style="color: #6C7086;">Upload</span>
+            <input type="file" class="hidden" (change)="onFileUpload($event)" accept=".js,.ts,.py,.java,.cpp,.go,.rs,.php,.rb,.cs,.swift,.kt,.html,.css,.sql,.sh">
+          </label>
+
+          <div class="flex-1"></div>
+
+          <!-- Line/Char count -->
+          @if (code) {
+            <span class="text-[10px] hidden sm:block font-mono" style="color: #585B70;">
+              {{ lineCount() }} ln &middot; {{ charCount() }} ch
+            </span>
+          }
+
+          <span class="text-[10px] hidden sm:block" style="color: #45475A;">
+            <kbd class="px-1.5 py-0.5 rounded font-mono" style="background: rgba(69,71,90,0.3); border: 1px solid rgba(69,71,90,0.5); color: #585B70;">Ctrl+Enter</kbd>
+          </span>
+        </div>
+
+        <!-- Monaco Editor -->
+        <div class="code-area">
+          <ngx-monaco-editor
+            [(ngModel)]="code"
+            [options]="editorOptions"
+            (onInit)="onEditorInit($event)"
+            class="w-full h-full"
+            style="min-height: 200px;">
+          </ngx-monaco-editor>
+        </div>
+
+        <!-- Status Bar / Review Button -->
+        <div class="editor-statusbar px-3 py-2">
+          <button (click)="reviewCode()"
+                  [disabled]="loading.isLoading() || !code.trim()"
+                  class="w-full py-2.5 rounded-lg font-semibold text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 cursor-pointer"
+                  [style.background]="loading.isLoading() ? 'rgba(69,71,90,0.3)' : 'linear-gradient(135deg, #89B4FA, #74C7EC)'"
+                  [style.color]="loading.isLoading() ? '#6C7086' : '#1E1E2E'">
+            @if (loading.isLoading()) {
+              <div class="flex items-center gap-3">
+                <div class="relative w-4 h-4">
+                  <div class="absolute inset-0 rounded-full border-2" style="border-color: rgba(137,180,250,0.2);"></div>
+                  <div class="absolute inset-0 rounded-full border-2 border-t-transparent animate-spin" style="border-color: #89B4FA; border-top-color: transparent;"></div>
+                </div>
+                <span class="text-sm">{{ thinkingText() }}</span>
+              </div>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              Review Code
+            }
+          </button>
+
+          @if (error()) {
+            <div class="mt-2 p-2.5 rounded-lg text-xs flex items-center gap-2"
+                 style="background: rgba(243,139,168,0.1); border: 1px solid rgba(243,139,168,0.2); color: #F38BA8;">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              {{ error() }}
+            </div>
+          }
+        </div>
       </div>
     </div>
 
@@ -209,11 +230,12 @@
 
           <!-- Score & Summary -->
           <div class="result-card glass-card rounded-2xl p-4 sm:p-6">
+
+            <!-- Score + Summary -->
             <div class="flex items-start gap-4 sm:gap-5">
               <app-score-circle [score]="review()!.score" [size]="72" [strokeWidth]="6" class="sm:hidden" />
               <app-score-circle [score]="review()!.score" [size]="90" [strokeWidth]="6" class="hidden sm:block" />
               <div class="flex-1 min-w-0">
-                <h3 class="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">Analysis Complete</h3>
                 <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">{{ review()!.summary }}</p>
               </div>
             </div>
@@ -372,21 +394,7 @@
             </div>
           }
 
-          <!-- Mobile export buttons -->
-          <div class="flex gap-3 sm:hidden">
-            <button (click)="exportPdf()"
-                    class="flex-1 py-3 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors cursor-pointer">
-              Export PDF
-            </button>
-            <button (click)="exportMarkdown()"
-                    class="flex-1 py-3 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-primary transition-colors cursor-pointer">
-              Export MD
-            </button>
-            <button (click)="clearEditor()"
-                    class="flex-1 py-3 rounded-xl glass-card text-sm font-medium text-gray-300 hover:text-red-400 transition-colors cursor-pointer">
-              Clear
-            </button>
-          </div>
+          <!-- Mobile actions (buttons already in Analysis Complete card above) -->
 
         } @else {
           <!-- Empty State -->

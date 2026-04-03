@@ -72,6 +72,19 @@ declare const monaco: any;
       flex: 1;
       overflow: hidden;
       min-height: 0;
+      position: relative;
+    }
+
+    .editor-window .code-area ngx-monaco-editor,
+    .editor-window .code-area ::ng-deep .editor-container,
+    .editor-window .code-area ::ng-deep .monaco-editor {
+      position: absolute !important;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 100% !important;
+      width: 100% !important;
     }
 
     .editor-titlebar {
@@ -104,11 +117,15 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
     language: 'javascript',
     minimap: { enabled: false },
     automaticLayout: true,
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace",
+    fontLigatures: true,
     lineNumbers: 'on',
+    lineHeight: 22,
+    letterSpacing: 0.3,
     scrollBeyondLastLine: false,
     roundedSelection: true,
-    padding: { top: 16 },
+    padding: { top: 12, bottom: 12 },
     wordWrap: 'on',
     tabSize: 2,
     suggestOnTriggerCharacters: true,
@@ -119,6 +136,15 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
     smoothScrolling: true,
     cursorBlinking: 'smooth',
     cursorSmoothCaretAnimation: 'on',
+    renderLineHighlight: 'gutter',
+    renderWhitespace: 'none',
+    overviewRulerBorder: false,
+    hideCursorInOverviewRuler: true,
+    scrollbar: {
+      verticalScrollbarSize: 8,
+      horizontalScrollbarSize: 8,
+      useShadows: false,
+    },
   };
 
   review = signal<ReviewResponse | null>(null);
