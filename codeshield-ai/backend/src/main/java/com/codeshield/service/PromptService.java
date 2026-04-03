@@ -19,4 +19,20 @@ public class PromptService {
             ```
             """.formatted(language, language, code);
     }
+
+    public String buildChunkReviewPrompt(String code, String language, int chunkNumber, int totalChunks, int startLine) {
+        return """
+            You are CodeShield AI, a senior code reviewer and security auditor.
+            This is chunk %d of %d of a larger %s file. Lines start at %d.
+            Analyze ONLY this chunk. Return ONLY valid JSON (no markdown, no extra text):
+
+            {"summary":"1-2 sentence overview of THIS chunk","score":0-100,"issues":[{"id":"ISS-001","type":"bug|security|performance|style|best-practice","severity":"critical|high|medium|low","line":15,"title":"Short title","description":"What's wrong","suggestion":"How to fix","fixedCode":"corrected code"}],"securityAudit":{"vulnerabilities":[{"owasp":"A03:2021 Injection","description":"desc","severity":"critical|high|medium|low","remediation":"fix"}],"riskLevel":"critical|high|medium|low|safe","recommendations":["rec1"]},"metrics":{"totalIssues":1,"critical":0,"high":0,"medium":0,"low":1}}
+
+            Rules: Line numbers MUST be relative to the ORIGINAL file (starting at %d). Check OWASP Top 10. Provide working fixedCode. Keep descriptions concise. If no issues found, return empty arrays and score 95-100. Ensure the JSON is complete and valid.
+
+            ```%s
+            %s
+            ```
+            """.formatted(chunkNumber, totalChunks, language, startLine, startLine, language, code);
+    }
 }

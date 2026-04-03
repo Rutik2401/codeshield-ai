@@ -25,5 +25,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent),
   },
+  {
+    path: 'learn',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/learn/learn.component').then(m => m.LearnComponent),
+  },
   { path: '**', redirectTo: '' }
 ];

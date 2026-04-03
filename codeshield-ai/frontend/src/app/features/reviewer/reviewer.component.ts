@@ -15,7 +15,51 @@ import { gsap } from 'gsap';
   selector: 'app-reviewer',
   standalone: true,
   imports: [FormsModule, SeverityBadgeComponent, ScoreCircleComponent],
-  templateUrl: './reviewer.component.html'
+  templateUrl: './reviewer.component.html',
+  styles: [`
+    :host { display: block; }
+
+    .reviewer-layout {
+      min-height: calc(100vh - 64px);
+    }
+
+    @media (min-width: 1024px) {
+      .split-container {
+        display: flex;
+        height: calc(100vh - 140px);
+      }
+      .panel-left {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid rgba(51, 65, 85, 0.5);
+        overflow: hidden;
+      }
+      .panel-left .code-area {
+        flex: 1;
+        overflow: hidden;
+      }
+      .panel-left textarea {
+        height: 100% !important;
+        min-height: unset !important;
+      }
+      .panel-right {
+        width: 50%;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(100,116,139,0.3) transparent;
+      }
+      .panel-right::-webkit-scrollbar { width: 6px; }
+      .panel-right::-webkit-scrollbar-track { background: transparent; }
+      .panel-right::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.3); border-radius: 3px; }
+      .panel-right::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.5); }
+    }
+
+    textarea.code-editor {
+      tab-size: 2;
+      -moz-tab-size: 2;
+    }
+  `]
 })
 export class ReviewerComponent implements AfterViewInit, OnDestroy {
   private geminiService = inject(GeminiService);

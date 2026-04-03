@@ -203,7 +203,6 @@ Done!
 - Overall code quality score (0-100) with circular progress indicator
 - Export review as PDF / Markdown report
 - Review history (saved in localStorage for Phase 1, PostgreSQL in Phase 2)
-- Dark/Light theme toggle
 - Responsive design (mobile-friendly)
 - Loading skeleton animations while AI is analyzing
 - Toast notifications for success/error feedback

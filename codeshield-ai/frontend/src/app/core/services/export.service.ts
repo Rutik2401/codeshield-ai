@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { ReviewResponse } from '../../models/review.model';
-import { saveAs } from 'file-saver';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
@@ -37,24 +36,63 @@ export class ExportService {
       });
     }
 
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-    saveAs(blob, `codeshield-review-${Date.now()}.md`);
+    this.downloadFile(md, `codeshield-review-${Date.now()}.md`, 'text/markdown;charset=utf-8');
   }
 
   async exportAsPdf(elementId: string): Promise<void> {
-    const html2pdf = (await import('html2pdf.js')).default;
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    html2pdf()
-      .set({
-        margin: 10,
-        filename: `codeshield-review-${Date.now()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      })
-      .from(element)
-      .save();
+    try {
+      const mod = await import('html2pdf.js');
+      const html2pdf = mod.default ?? mod;
+
+      await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: `codeshield-review-${Date.now()}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#0F172A',
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(element)
+        .save();
+    } catch (err) {
+      console.error('PDF export failed, using print fallback:', err);
+      this.printFallback(element);
+    }
+  }
+
+  private downloadFile(content: string, filename: string, type: string): void {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private printFallback(element: HTMLElement): void {
+    const win = window.open('', '_blank');
+    if (!win) return;
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>CodeShield AI - Review Report</title>
+          <style>
+            body { font-family: system-ui, sans-serif; padding: 24px; background: #0F172A; color: #F8FAFC; }
+          </style>
+        </head>
+        <body>${element.innerHTML}</body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
   }
 }

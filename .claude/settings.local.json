@@ -51,7 +51,8 @@
       "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\nTIME:%{time_total}s\" \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyAjQ-spzO_zZt7HA5MJHkkJAHmtjfkLlxo\" -H \"Content-Type: application/json\" -d '{\"contents\":[{\"parts\":[{\"text\":\"Say hello in JSON: {\\\\\"msg\\\\\":\\\\\"hello\\\\\"}\"}]}],\"generationConfig\":{\"maxOutputTokens\":50}}')",
       "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\nTIME:%{time_total}s\" \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=AIzaSyAjQ-spzO_zZt7HA5MJHkkJAHmtjfkLlxo\" -H \"Content-Type: application/json\" -d '{\"contents\":[{\"parts\":[{\"text\":\"Say hello in JSON: {\\\\\"msg\\\\\":\\\\\"hello\\\\\"}\"}]}],\"generationConfig\":{\"maxOutputTokens\":50}}')",
       "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\nTIME:%{time_total}s\" \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyAjQ-spzO_zZt7HA5MJHkkJAHmtjfkLlxo\" -H \"Content-Type: application/json\" -d '{\"contents\":[{\"parts\":[{\"text\":\"Say hello in JSON: {\\\\\"msg\\\\\":\\\\\"hello\\\\\"}\"}]}],\"generationConfig\":{\"maxOutputTokens\":50}}')",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyAjQ-spzO_zZt7HA5MJHkkJAHmtjfkLlxo\")"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyAjQ-spzO_zZt7HA5MJHkkJAHmtjfkLlxo\")",
+      "Bash(node -e \"const m = require\\('file-saver'\\); console.log\\(typeof m.saveAs\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\rutik\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.21.2"
