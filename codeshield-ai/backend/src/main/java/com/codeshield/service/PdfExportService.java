@@ -16,354 +16,531 @@ import java.util.List;
 @Service
 public class PdfExportService {
 
-    // Colors
-    private static final Color PRIMARY_TEXT = new Color(0x1E, 0x29, 0x3B);
-    private static final Color CRITICAL_COLOR = new Color(0xEF, 0x44, 0x44);
-    private static final Color HIGH_COLOR = new Color(0xF9, 0x73, 0x16);
-    private static final Color MEDIUM_COLOR = new Color(0xEA, 0xB3, 0x08);
-    private static final Color LOW_COLOR = new Color(0x3B, 0x82, 0xF6);
-    private static final Color ACCENT_GREEN = new Color(0x16, 0xA3, 0x4A);
-    private static final Color CODE_BG = new Color(0xF1, 0xF5, 0xF9);
-    private static final Color LIGHT_GRAY = new Color(0x94, 0xA3, 0xB8);
-    private static final Color DIVIDER_COLOR = new Color(0xE2, 0xE8, 0xF0);
+    // Brand palette
+    private static final Color BRAND = new Color(0x1D, 0x4E, 0xD8);       // Deep blue
+    private static final Color BRAND_LIGHT = new Color(0xDB, 0xEA, 0xFE); // Light blue bg
+    private static final Color DARK = new Color(0x0F, 0x17, 0x2A);        // Near black
+    private static final Color BODY = new Color(0x37, 0x41, 0x51);        // Dark gray
+    private static final Color MUTED = new Color(0x6B, 0x72, 0x80);       // Medium gray
+    private static final Color LIGHT = new Color(0x9C, 0xA3, 0xAF);       // Light gray
+    private static final Color SURFACE = new Color(0xF9, 0xFA, 0xFB);     // Off-white bg
+    private static final Color BORDER = new Color(0xE5, 0xE7, 0xEB);      // Subtle border
+    private static final Color WHITE = new Color(0xFF, 0xFF, 0xFF);
 
-    // Fonts
-    private static final Font TITLE_FONT = new Font(Font.HELVETICA, 22, Font.BOLD, PRIMARY_TEXT);
-    private static final Font SUBTITLE_FONT = new Font(Font.HELVETICA, 11, Font.NORMAL, LIGHT_GRAY);
-    private static final Font HEADING_FONT = new Font(Font.HELVETICA, 16, Font.BOLD, PRIMARY_TEXT);
-    private static final Font SUBHEADING_FONT = new Font(Font.HELVETICA, 13, Font.BOLD, PRIMARY_TEXT);
-    private static final Font BODY_FONT = new Font(Font.HELVETICA, 10, Font.NORMAL, PRIMARY_TEXT);
-    private static final Font BODY_BOLD = new Font(Font.HELVETICA, 10, Font.BOLD, PRIMARY_TEXT);
-    private static final Font SMALL_FONT = new Font(Font.HELVETICA, 9, Font.NORMAL, LIGHT_GRAY);
-    private static final Font CODE_FONT = new Font(Font.COURIER, 9, Font.NORMAL, PRIMARY_TEXT);
-    private static final Font SCORE_FONT = new Font(Font.HELVETICA, 36, Font.BOLD);
+    // Severity
+    private static final Color CRIT = new Color(0xDC, 0x26, 0x26);
+    private static final Color CRIT_BG = new Color(0xFE, 0xF2, 0xF2);
+    private static final Color HIGH_C = new Color(0xEA, 0x58, 0x0C);
+    private static final Color HIGH_BG = new Color(0xFF, 0xF7, 0xED);
+    private static final Color MED_C = new Color(0xCA, 0x8A, 0x04);
+    private static final Color MED_BG = new Color(0xFE, 0xFB, 0xE8);
+    private static final Color LOW_C = new Color(0x25, 0x63, 0xEB);
+    private static final Color LOW_BG = new Color(0xEF, 0xF6, 0xFF);
+    private static final Color GREEN = new Color(0x05, 0x96, 0x69);
+    private static final Color GREEN_BG = new Color(0xEC, 0xFD, 0xF5);
+    private static final Color CODE_BG = new Color(0xF3, 0xF4, 0xF6);
 
     public byte[] generatePdf(ReviewResponse review, String language) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            Document document = new Document(PageSize.A4, 50, 50, 50, 50);
-            PdfWriter writer = PdfWriter.getInstance(document, baos);
-            writer.setPageEvent(new FooterPageEvent());
-            document.open();
+            Document doc = new Document(PageSize.A4, 40, 40, 40, 55);
+            PdfWriter writer = PdfWriter.getInstance(doc, baos);
+            writer.setPageEvent(new PageEvents(language));
+            doc.open();
 
-            addHeaderAndSummary(document, review, language);
-            addMetricsBar(document, review.getMetrics());
-            addIssuesSection(document, review.getIssues());
-            addSecurityAuditSection(document, review.getSecurityAudit());
+            buildCoverBanner(doc, writer, review, language);
+            buildMetrics(doc, review.getMetrics());
+            buildIssues(doc, review.getIssues());
+            buildSecurityAudit(doc, review.getSecurityAudit());
 
-            document.close();
+            doc.close();
             return baos.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to generate PDF report", e);
+            throw new RuntimeException("PDF generation failed", e);
         }
     }
 
-    private void addHeaderAndSummary(Document document, ReviewResponse review, String language) throws DocumentException {
-        // Title
-        Paragraph title = new Paragraph("CodeShield AI \u2014 Code Review Report", TITLE_FONT);
-        title.setAlignment(Element.ALIGN_LEFT);
-        title.setSpacingAfter(4);
-        document.add(title);
+    // ── Cover Banner ──
 
-        // Metadata line
-        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
-        Paragraph meta = new Paragraph(
-                "Language: " + capitalize(language) + "  |  Date: " + dateStr,
-                SUBTITLE_FONT
-        );
-        meta.setSpacingAfter(16);
-        document.add(meta);
+    private void buildCoverBanner(Document doc, PdfWriter writer, ReviewResponse review, String language)
+            throws DocumentException {
+        // Blue banner rectangle drawn directly on the page
+        PdfContentByte canvas = writer.getDirectContentUnder();
+        float pageW = doc.getPageSize().getWidth();
+        canvas.setColorFill(BRAND);
+        canvas.rectangle(0, doc.getPageSize().getHeight() - 160, pageW, 160);
+        canvas.fill();
 
-        addDivider(document);
+        // Brand name on banner
+        Font brandFont = new Font(Font.HELVETICA, 12, Font.BOLD, WHITE);
+        Paragraph brand = new Paragraph("CODESHIELD AI", brandFont);
+        brand.setSpacingAfter(4);
+        doc.add(brand);
 
-        // Score
-        Paragraph scoreLabel = new Paragraph("Overall Score", SUBHEADING_FONT);
-        scoreLabel.setSpacingBefore(10);
-        scoreLabel.setSpacingAfter(4);
-        document.add(scoreLabel);
+        // Title on banner
+        Font titleFont = new Font(Font.HELVETICA, 26, Font.BOLD, WHITE);
+        Paragraph title = new Paragraph("Code Review Report", titleFont);
+        title.setSpacingAfter(8);
+        doc.add(title);
 
-        Font scoreFont = new Font(Font.HELVETICA, 36, Font.BOLD, getScoreColor(review.getScore()));
-        Paragraph scoreValue = new Paragraph(review.getScore() + " / 100", scoreFont);
-        scoreValue.setSpacingAfter(16);
-        document.add(scoreValue);
+        // Meta line on banner
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+        Font metaFont = new Font(Font.HELVETICA, 10, Font.NORMAL, new Color(0xBF, 0xDB, 0xFE));
+        Paragraph meta = new Paragraph(cap(language) + "  \u2022  " + date + "  \u2022  " +
+                review.getMetrics().getTotalIssues() + " issues found", metaFont);
+        meta.setSpacingAfter(30);
+        doc.add(meta);
 
-        // Summary
-        if (review.getSummary() != null && !review.getSummary().isBlank()) {
-            Paragraph summaryLabel = new Paragraph("Summary", SUBHEADING_FONT);
-            summaryLabel.setSpacingAfter(4);
-            document.add(summaryLabel);
+        // Score card — floating card effect
+        PdfPTable card = new PdfPTable(new float[]{1.2f, 3f});
+        card.setWidthPercentage(100);
+        card.setSpacingAfter(20);
 
-            Paragraph summaryText = new Paragraph(review.getSummary(), BODY_FONT);
-            summaryText.setSpacingAfter(16);
-            document.add(summaryText);
+        // Left: Score circle
+        PdfPCell scoreCell = cell(WHITE, 20);
+        scoreCell.setBorderColor(BORDER);
+        scoreCell.setBorderWidth(1);
+        scoreCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        scoreCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        Color sc = scoreColor(review.getScore());
+        Paragraph scoreNum = new Paragraph(String.valueOf(review.getScore()),
+                new Font(Font.HELVETICA, 44, Font.BOLD, sc));
+        scoreNum.setAlignment(Element.ALIGN_CENTER);
+        scoreCell.addElement(scoreNum);
+
+        Paragraph scoreLabel = new Paragraph("/ 100",
+                new Font(Font.HELVETICA, 14, Font.NORMAL, LIGHT));
+        scoreLabel.setAlignment(Element.ALIGN_CENTER);
+        scoreCell.addElement(scoreLabel);
+
+        String grade = review.getScore() >= 80 ? "Excellent" : review.getScore() >= 60 ? "Good" :
+                review.getScore() >= 40 ? "Needs Work" : "Poor";
+        Paragraph gradeP = new Paragraph(grade,
+                new Font(Font.HELVETICA, 10, Font.BOLD, sc));
+        gradeP.setAlignment(Element.ALIGN_CENTER);
+        gradeP.setSpacingBefore(4);
+        scoreCell.addElement(gradeP);
+
+        card.addCell(scoreCell);
+
+        // Right: Summary
+        PdfPCell sumCell = cell(WHITE, 20);
+        sumCell.setBorderColor(BORDER);
+        sumCell.setBorderWidth(1);
+
+        Paragraph sumH = new Paragraph("Summary", new Font(Font.HELVETICA, 13, Font.BOLD, DARK));
+        sumH.setSpacingAfter(8);
+        sumCell.addElement(sumH);
+
+        if (review.getSummary() != null) {
+            Paragraph sumBody = new Paragraph(review.getSummary(),
+                    new Font(Font.HELVETICA, 10, Font.NORMAL, BODY));
+            sumBody.setLeading(16);
+            sumCell.addElement(sumBody);
         }
+        card.addCell(sumCell);
 
-        addDivider(document);
+        doc.add(card);
     }
 
-    private void addMetricsBar(Document document, ReviewResponse.Metrics metrics) throws DocumentException {
-        if (metrics == null) return;
+    // ── Metrics Bar ──
 
-        Paragraph metricsLabel = new Paragraph("Issue Metrics", SUBHEADING_FONT);
-        metricsLabel.setSpacingBefore(10);
-        metricsLabel.setSpacingAfter(8);
-        document.add(metricsLabel);
+    private void buildMetrics(Document doc, ReviewResponse.Metrics m) throws DocumentException {
+        if (m == null) return;
 
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(100);
-        table.setSpacingAfter(16);
+        table.setSpacingAfter(10);
 
-        addMetricCell(table, "CRITICAL", metrics.getCritical(), CRITICAL_COLOR);
-        addMetricCell(table, "HIGH", metrics.getHigh(), HIGH_COLOR);
-        addMetricCell(table, "MEDIUM", metrics.getMedium(), MEDIUM_COLOR);
-        addMetricCell(table, "LOW", metrics.getLow(), LOW_COLOR);
+        metricCell(table, m.getCritical(), "CRITICAL", CRIT, CRIT_BG);
+        metricCell(table, m.getHigh(), "HIGH", HIGH_C, HIGH_BG);
+        metricCell(table, m.getMedium(), "MEDIUM", MED_C, MED_BG);
+        metricCell(table, m.getLow(), "LOW", LOW_C, LOW_BG);
 
-        document.add(table);
-        addDivider(document);
+        doc.add(table);
     }
 
-    private void addMetricCell(PdfPTable table, String label, int count, Color color) {
-        PdfPCell cell = new PdfPCell();
-        cell.setBorder(Rectangle.BOX);
-        cell.setBorderColor(DIVIDER_COLOR);
-        cell.setPadding(10);
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+    private void metricCell(PdfPTable t, int count, String label, Color color, Color bg) {
+        PdfPCell c = cell(bg, 14);
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        Font countFont = new Font(Font.HELVETICA, 20, Font.BOLD, color);
-        Paragraph countP = new Paragraph(String.valueOf(count), countFont);
-        countP.setAlignment(Element.ALIGN_CENTER);
-        cell.addElement(countP);
+        Paragraph num = new Paragraph(String.valueOf(count),
+                new Font(Font.HELVETICA, 24, Font.BOLD, color));
+        num.setAlignment(Element.ALIGN_CENTER);
+        c.addElement(num);
 
-        Font labelFont = new Font(Font.HELVETICA, 8, Font.BOLD, color);
-        Paragraph labelP = new Paragraph(label, labelFont);
-        labelP.setAlignment(Element.ALIGN_CENTER);
-        cell.addElement(labelP);
+        Paragraph lab = new Paragraph(label,
+                new Font(Font.HELVETICA, 7, Font.BOLD, color));
+        lab.setAlignment(Element.ALIGN_CENTER);
+        lab.setSpacingBefore(2);
+        c.addElement(lab);
 
-        table.addCell(cell);
+        t.addCell(c);
     }
 
-    private void addIssuesSection(Document document, List<ReviewResponse.Issue> issues) throws DocumentException {
+    // ── Issues Section ──
+
+    private void buildIssues(Document doc, List<ReviewResponse.Issue> issues) throws DocumentException {
         if (issues == null || issues.isEmpty()) return;
 
-        Paragraph heading = new Paragraph("Issues (" + issues.size() + ")", HEADING_FONT);
-        heading.setSpacingBefore(10);
-        heading.setSpacingAfter(12);
-        document.add(heading);
+        sectionHeader(doc, "Issues", String.valueOf(issues.size()));
 
         for (int i = 0; i < issues.size(); i++) {
-            ReviewResponse.Issue issue = issues.get(i);
-            addIssueBlock(document, issue, i + 1);
+            buildIssueCard(doc, issues.get(i), i + 1);
         }
     }
 
-    private void addIssueBlock(Document document, ReviewResponse.Issue issue, int index) throws DocumentException {
-        // Issue header line: severity badge + type + line number
-        Phrase headerPhrase = new Phrase();
+    private void buildIssueCard(Document doc, ReviewResponse.Issue issue, int idx) throws DocumentException {
+        // Entire issue in a bordered table cell to keep together and look like a card
+        PdfPTable card = new PdfPTable(1);
+        card.setWidthPercentage(100);
+        card.setSpacingBefore(idx > 1 ? 10 : 0);
+        card.setSpacingAfter(4);
+        card.setKeepTogether(true);
 
-        // Severity badge
-        Color severityColor = getSeverityColor(issue.getSeverity());
-        Font severityFont = new Font(Font.HELVETICA, 9, Font.BOLD, severityColor);
-        Chunk severityChunk = new Chunk(" " + issue.getSeverity().toUpperCase() + " ", severityFont);
-        headerPhrase.add(severityChunk);
+        PdfPCell cardCell = cell(WHITE, 14);
+        cardCell.setBorderColor(BORDER);
+        cardCell.setBorderWidth(0.75f);
 
-        // Type tag
-        Font tagFont = new Font(Font.HELVETICA, 9, Font.NORMAL, LIGHT_GRAY);
-        headerPhrase.add(new Chunk("  " + issue.getType(), tagFont));
+        // Severity left border accent
+        Color sc = sevColor(issue.getSeverity());
+        cardCell.setBorderColorLeft(sc);
+        cardCell.setBorderWidthLeft(3f);
 
-        // Line number
-        if (issue.getLine() > 0) {
-            headerPhrase.add(new Chunk("  |  Line " + issue.getLine(), tagFont));
-        }
-
-        Paragraph headerP = new Paragraph(headerPhrase);
-        headerP.setSpacingBefore(8);
-        headerP.setSpacingAfter(2);
-        document.add(headerP);
+        // Header row: SEVERITY | type | Line N
+        Phrase header = new Phrase();
+        header.add(badge(issue.getSeverity().toUpperCase(), sc));
+        header.add(new Chunk("   " + issue.getType(),
+                new Font(Font.HELVETICA, 8, Font.NORMAL, MUTED)));
+        header.add(new Chunk("   \u2022   Line " + issue.getLine(),
+                new Font(Font.HELVETICA, 8, Font.NORMAL, MUTED)));
+        Paragraph headerP = new Paragraph(header);
+        headerP.setSpacingAfter(6);
+        cardCell.addElement(headerP);
 
         // Title
-        Paragraph titleP = new Paragraph(index + ". " + issue.getTitle(), BODY_BOLD);
-        titleP.setSpacingAfter(4);
-        document.add(titleP);
+        Paragraph titleP = new Paragraph(idx + ". " + issue.getTitle(),
+                new Font(Font.HELVETICA, 11, Font.BOLD, DARK));
+        titleP.setSpacingAfter(5);
+        cardCell.addElement(titleP);
 
         // Description
         if (issue.getDescription() != null && !issue.getDescription().isBlank()) {
-            Paragraph descP = new Paragraph(issue.getDescription(), BODY_FONT);
-            descP.setSpacingAfter(4);
-            document.add(descP);
+            Paragraph descP = new Paragraph(issue.getDescription(),
+                    new Font(Font.HELVETICA, 9.5f, Font.NORMAL, BODY));
+            descP.setLeading(14);
+            descP.setSpacingAfter(6);
+            cardCell.addElement(descP);
         }
 
-        // Suggestion
+        // Suggestion in green box
         if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
-            Font suggestionFont = new Font(Font.HELVETICA, 10, Font.NORMAL, ACCENT_GREEN);
-            Paragraph suggP = new Paragraph("\u2713 " + issue.getSuggestion(), suggestionFont);
-            suggP.setSpacingAfter(4);
-            document.add(suggP);
+            PdfPTable sugBox = new PdfPTable(1);
+            sugBox.setWidthPercentage(100);
+            PdfPCell sugCell = cell(GREEN_BG, 8);
+            sugCell.setBorder(Rectangle.NO_BORDER);
+            Paragraph sugP = new Paragraph("\u2713  " + issue.getSuggestion(),
+                    new Font(Font.HELVETICA, 9, Font.NORMAL, GREEN));
+            sugP.setLeading(13);
+            sugCell.addElement(sugP);
+            sugBox.addCell(sugCell);
+            cardCell.addElement(sugBox);
         }
 
-        // Fixed code block
+        card.addCell(cardCell);
+        doc.add(card);
+
+        // Code block outside card (allows page splitting)
         if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
-            PdfPTable codeTable = new PdfPTable(1);
-            codeTable.setWidthPercentage(100);
-            codeTable.setSpacingBefore(4);
-            codeTable.setSpacingAfter(12);
-
-            PdfPCell codeCell = new PdfPCell();
-            codeCell.setBackgroundColor(CODE_BG);
-            codeCell.setBorderColor(DIVIDER_COLOR);
-            codeCell.setPadding(8);
-
-            Font codeLabelFont = new Font(Font.HELVETICA, 8, Font.BOLD, ACCENT_GREEN);
-            Paragraph codeLabel = new Paragraph("Suggested Fix:", codeLabelFont);
-            codeLabel.setSpacingAfter(4);
-            codeCell.addElement(codeLabel);
-
-            Paragraph codeP = new Paragraph(issue.getFixedCode(), CODE_FONT);
-            codeCell.addElement(codeP);
-
-            codeTable.addCell(codeCell);
-            document.add(codeTable);
-        } else {
-            // Add some spacing between issues when no code block
-            Paragraph spacer = new Paragraph(" ");
-            spacer.setSpacingAfter(8);
-            document.add(spacer);
+            buildCodeBlock(doc, issue.getFixedCode());
         }
     }
 
-    private void addSecurityAuditSection(Document document, ReviewResponse.SecurityAudit audit) throws DocumentException {
+    private void buildCodeBlock(Document doc, String code) throws DocumentException {
+        PdfPTable table = new PdfPTable(1);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(2);
+        table.setSpacingAfter(6);
+        table.setSplitLate(false);
+        table.setSplitRows(true);
+
+        PdfPCell c = cell(CODE_BG, 10);
+        c.setBorderColor(BORDER);
+        c.setBorderWidth(0.5f);
+
+        // Label
+        Paragraph label = new Paragraph("SUGGESTED FIX",
+                new Font(Font.HELVETICA, 7, Font.BOLD, GREEN));
+        label.setSpacingAfter(6);
+        c.addElement(label);
+
+        // Code lines
+        Font codeFont = new Font(Font.COURIER, 8, Font.NORMAL, new Color(0x1F, 0x29, 0x37));
+        for (String line : code.split("\n")) {
+            Paragraph lp = new Paragraph(line.isEmpty() ? " " : line, codeFont);
+            lp.setLeading(11);
+            c.addElement(lp);
+        }
+
+        table.addCell(c);
+        doc.add(table);
+    }
+
+    // ── Security Audit ──
+
+    private void buildSecurityAudit(Document doc, ReviewResponse.SecurityAudit audit) throws DocumentException {
         if (audit == null) return;
 
-        addDivider(document);
+        sectionHeader(doc, "Security Audit", null);
 
-        Paragraph heading = new Paragraph("Security Audit", HEADING_FONT);
-        heading.setSpacingBefore(10);
-        heading.setSpacingAfter(8);
-        document.add(heading);
-
-        // Risk level
+        // Risk level badge
         if (audit.getRiskLevel() != null) {
-            Color riskColor = getSeverityColor(audit.getRiskLevel());
-            Font riskFont = new Font(Font.HELVETICA, 14, Font.BOLD, riskColor);
-            Paragraph riskP = new Paragraph("Risk Level: " + audit.getRiskLevel().toUpperCase(), riskFont);
-            riskP.setSpacingAfter(12);
-            document.add(riskP);
+            Color rc = sevColor(audit.getRiskLevel());
+            PdfPTable riskTable = new PdfPTable(1);
+            riskTable.setWidthPercentage(30);
+            riskTable.setHorizontalAlignment(Element.ALIGN_LEFT);
+            riskTable.setSpacingAfter(14);
+
+            PdfPCell riskCell = cell(sevBg(audit.getRiskLevel()), 10);
+            riskCell.setBorder(Rectangle.NO_BORDER);
+            riskCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            Paragraph riskP = new Paragraph("RISK LEVEL:  " + audit.getRiskLevel().toUpperCase(),
+                    new Font(Font.HELVETICA, 10, Font.BOLD, rc));
+            riskP.setAlignment(Element.ALIGN_CENTER);
+            riskCell.addElement(riskP);
+            riskTable.addCell(riskCell);
+            doc.add(riskTable);
         }
 
         // Vulnerabilities
         List<ReviewResponse.Vulnerability> vulns = audit.getVulnerabilities();
         if (vulns != null && !vulns.isEmpty()) {
-            Paragraph vulnHeading = new Paragraph("Vulnerabilities", SUBHEADING_FONT);
-            vulnHeading.setSpacingAfter(6);
-            document.add(vulnHeading);
+            Paragraph vulnH = new Paragraph("Vulnerabilities",
+                    new Font(Font.HELVETICA, 13, Font.BOLD, DARK));
+            vulnH.setSpacingAfter(10);
+            doc.add(vulnH);
 
-            for (ReviewResponse.Vulnerability vuln : vulns) {
-                addVulnerabilityBlock(document, vuln);
+            for (ReviewResponse.Vulnerability v : vulns) {
+                PdfPTable vCard = new PdfPTable(1);
+                vCard.setWidthPercentage(100);
+                vCard.setSpacingAfter(8);
+                vCard.setKeepTogether(true);
+
+                PdfPCell vc = cell(SURFACE, 12);
+                vc.setBorderColor(BORDER);
+                vc.setBorderWidth(0.5f);
+                vc.setBorderColorLeft(sevColor(v.getSeverity()));
+                vc.setBorderWidthLeft(3f);
+
+                // Header
+                Phrase vh = new Phrase();
+                vh.add(badge(v.getSeverity() != null ? v.getSeverity().toUpperCase() : "", sevColor(v.getSeverity())));
+                if (v.getOwasp() != null) {
+                    vh.add(new Chunk("   " + v.getOwasp(),
+                            new Font(Font.HELVETICA, 9, Font.BOLD, MUTED)));
+                }
+                Paragraph vhp = new Paragraph(vh);
+                vhp.setSpacingAfter(6);
+                vc.addElement(vhp);
+
+                if (v.getDescription() != null) {
+                    Paragraph dp = new Paragraph(v.getDescription(),
+                            new Font(Font.HELVETICA, 9.5f, Font.NORMAL, BODY));
+                    dp.setLeading(14);
+                    dp.setSpacingAfter(5);
+                    vc.addElement(dp);
+                }
+
+                if (v.getRemediation() != null) {
+                    Paragraph rp = new Paragraph("\u2713  " + v.getRemediation(),
+                            new Font(Font.HELVETICA, 9, Font.NORMAL, GREEN));
+                    rp.setLeading(13);
+                    vc.addElement(rp);
+                }
+
+                vCard.addCell(vc);
+                doc.add(vCard);
             }
         }
 
         // Recommendations
         List<String> recs = audit.getRecommendations();
         if (recs != null && !recs.isEmpty()) {
-            Paragraph recHeading = new Paragraph("Recommendations", SUBHEADING_FONT);
-            recHeading.setSpacingBefore(10);
-            recHeading.setSpacingAfter(6);
-            document.add(recHeading);
+            Paragraph recH = new Paragraph("Recommendations",
+                    new Font(Font.HELVETICA, 13, Font.BOLD, DARK));
+            recH.setSpacingBefore(14);
+            recH.setSpacingAfter(10);
+            doc.add(recH);
 
-            com.lowagie.text.List recList = new com.lowagie.text.List(false, 10);
-            recList.setListSymbol("\u2022  ");
-            for (String rec : recs) {
-                ListItem item = new ListItem(rec, BODY_FONT);
-                item.setSpacingAfter(4);
-                recList.add(item);
+            for (int i = 0; i < recs.size(); i++) {
+                PdfPTable row = new PdfPTable(new float[]{0.4f, 9.6f});
+                row.setWidthPercentage(100);
+                row.setKeepTogether(true);
+                row.setSpacingAfter(4);
+
+                // Number circle
+                PdfPCell numC = cell(BRAND_LIGHT, 6);
+                numC.setBorder(Rectangle.NO_BORDER);
+                numC.setHorizontalAlignment(Element.ALIGN_CENTER);
+                numC.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                Paragraph numP = new Paragraph(String.valueOf(i + 1),
+                        new Font(Font.HELVETICA, 8, Font.BOLD, BRAND));
+                numP.setAlignment(Element.ALIGN_CENTER);
+                numC.addElement(numP);
+                row.addCell(numC);
+
+                // Text
+                PdfPCell txtC = cell(null, 6);
+                txtC.setBorder(Rectangle.NO_BORDER);
+                Paragraph txtP = new Paragraph(recs.get(i),
+                        new Font(Font.HELVETICA, 9.5f, Font.NORMAL, BODY));
+                txtP.setLeading(14);
+                txtC.addElement(txtP);
+                row.addCell(txtC);
+
+                doc.add(row);
             }
-            document.add(recList);
         }
     }
 
-    private void addVulnerabilityBlock(Document document, ReviewResponse.Vulnerability vuln) throws DocumentException {
-        // OWASP tag + severity
-        Phrase header = new Phrase();
-        Color sevColor = getSeverityColor(vuln.getSeverity());
-        Font sevFont = new Font(Font.HELVETICA, 9, Font.BOLD, sevColor);
-        header.add(new Chunk(vuln.getSeverity() != null ? vuln.getSeverity().toUpperCase() : "UNKNOWN", sevFont));
+    // ── Helpers ──
 
-        if (vuln.getOwasp() != null) {
-            Font owaspFont = new Font(Font.HELVETICA, 9, Font.NORMAL, LIGHT_GRAY);
-            header.add(new Chunk("  |  " + vuln.getOwasp(), owaspFont));
-        }
+    private void sectionHeader(Document doc, String title, String count) throws DocumentException {
+        // Gradient-like section header bar
+        PdfPTable bar = new PdfPTable(1);
+        bar.setWidthPercentage(100);
+        bar.setSpacingBefore(20);
+        bar.setSpacingAfter(14);
 
-        Paragraph headerP = new Paragraph(header);
-        headerP.setSpacingBefore(4);
-        headerP.setSpacingAfter(2);
-        document.add(headerP);
+        PdfPCell c = cell(SURFACE, 12);
+        c.setBorder(Rectangle.NO_BORDER);
+        c.setBorderColorBottom(BRAND);
+        c.setBorderWidthBottom(2f);
 
-        if (vuln.getDescription() != null) {
-            Paragraph desc = new Paragraph(vuln.getDescription(), BODY_FONT);
-            desc.setSpacingAfter(2);
-            document.add(desc);
-        }
+        String text = count != null ? title + "  (" + count + ")" : title;
+        Paragraph p = new Paragraph(text,
+                new Font(Font.HELVETICA, 16, Font.BOLD, DARK));
+        c.addElement(p);
+        bar.addCell(c);
 
-        if (vuln.getRemediation() != null) {
-            Font remFont = new Font(Font.HELVETICA, 10, Font.NORMAL, ACCENT_GREEN);
-            Paragraph rem = new Paragraph("\u2713 " + vuln.getRemediation(), remFont);
-            rem.setSpacingAfter(8);
-            document.add(rem);
-        }
+        doc.add(bar);
     }
 
-    private void addDivider(Document document) throws DocumentException {
-        PdfPTable divider = new PdfPTable(1);
-        divider.setWidthPercentage(100);
-        divider.setSpacingBefore(4);
-        divider.setSpacingAfter(4);
-        PdfPCell cell = new PdfPCell();
-        cell.setBorder(Rectangle.BOTTOM);
-        cell.setBorderColor(DIVIDER_COLOR);
-        cell.setBorderWidth(1);
-        cell.setFixedHeight(1);
-        divider.addCell(cell);
-        document.add(divider);
+    private Chunk badge(String text, Color color) {
+        Font f = new Font(Font.HELVETICA, 8, Font.BOLD, color);
+        Chunk ch = new Chunk(" " + text + " ", f);
+        ch.setBackground(sevBg(text.toLowerCase()), 3, 2, 3, 2);
+        return ch;
     }
 
-    private Color getSeverityColor(String severity) {
-        if (severity == null) return LIGHT_GRAY;
-        return switch (severity.toLowerCase()) {
-            case "critical" -> CRITICAL_COLOR;
-            case "high" -> HIGH_COLOR;
-            case "medium" -> MEDIUM_COLOR;
-            case "low" -> LOW_COLOR;
-            default -> LIGHT_GRAY;
+    private PdfPCell cell(Color bg, int padding) {
+        PdfPCell c = new PdfPCell();
+        if (bg != null) c.setBackgroundColor(bg);
+        c.setPadding(padding);
+        c.setBorder(Rectangle.BOX);
+        return c;
+    }
+
+    private Color sevColor(String s) {
+        if (s == null) return MUTED;
+        return switch (s.toLowerCase()) {
+            case "critical" -> CRIT;
+            case "high" -> HIGH_C;
+            case "medium" -> MED_C;
+            case "low" -> LOW_C;
+            case "safe" -> GREEN;
+            default -> MUTED;
         };
     }
 
-    private Color getScoreColor(int score) {
-        if (score >= 80) return ACCENT_GREEN;
-        if (score >= 60) return MEDIUM_COLOR;
-        if (score >= 40) return HIGH_COLOR;
-        return CRITICAL_COLOR;
+    private Color sevBg(String s) {
+        if (s == null) return SURFACE;
+        return switch (s.toLowerCase()) {
+            case "critical" -> CRIT_BG;
+            case "high" -> HIGH_BG;
+            case "medium" -> MED_BG;
+            case "low" -> LOW_BG;
+            case "safe" -> GREEN_BG;
+            default -> SURFACE;
+        };
     }
 
-    private String capitalize(String s) {
-        if (s == null || s.isEmpty()) return s;
-        return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
+    private Color scoreColor(int score) {
+        if (score >= 80) return GREEN;
+        if (score >= 60) return MED_C;
+        if (score >= 40) return HIGH_C;
+        return CRIT;
     }
 
-    // Footer event handler
-    private static class FooterPageEvent extends PdfPageEventHelper {
+    private String cap(String s) {
+        return (s == null || s.isEmpty()) ? s : s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    // ── Page Events: Header + Footer + Page Number ──
+
+    private static class PageEvents extends PdfPageEventHelper {
+        private final String language;
+        private final String date;
+        private static final Font HF = new Font(Font.HELVETICA, 7.5f, Font.NORMAL, new Color(0x9C, 0xA3, 0xAF));
+        private static final Font PG = new Font(Font.HELVETICA, 7.5f, Font.BOLD, new Color(0x6B, 0x72, 0x80));
+
+        PageEvents(String lang) {
+            this.language = lang;
+            this.date = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM d, yyyy"));
+        }
+
         @Override
-        public void onEndPage(PdfWriter writer, Document document) {
+        public void onStartPage(PdfWriter writer, Document doc) {
+            if (writer.getPageNumber() > 1) {
+                PdfContentByte cb = writer.getDirectContent();
+                float y = doc.top() + 18;
+
+                ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
+                        new Phrase("CodeShield AI  \u2022  Code Review Report", HF),
+                        doc.leftMargin(), y, 0);
+
+                ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
+                        new Phrase(cap(language) + "  \u2022  " + date, HF),
+                        doc.right(), y, 0);
+
+                // Thin line under header
+                cb.setColorStroke(new Color(0xE5, 0xE7, 0xEB));
+                cb.setLineWidth(0.5f);
+                cb.moveTo(doc.leftMargin(), y - 6);
+                cb.lineTo(doc.right(), y - 6);
+                cb.stroke();
+            }
+        }
+
+        @Override
+        public void onEndPage(PdfWriter writer, Document doc) {
             PdfContentByte cb = writer.getDirectContent();
-            String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
-            String footer = "Generated by CodeShield AI \u2014 " + dateStr;
-            Font footerFont = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(0x94, 0xA3, 0xB8));
-            Phrase phrase = new Phrase(footer, footerFont);
-            ColumnText.showTextAligned(
-                    cb,
-                    Element.ALIGN_CENTER,
-                    phrase,
-                    (document.right() - document.left()) / 2 + document.leftMargin(),
-                    document.bottom() - 20,
-                    0
-            );
+            float y = doc.bottom() - 22;
+            float center = (doc.right() + doc.left()) / 2;
+
+            // Thin line above footer
+            cb.setColorStroke(new Color(0xE5, 0xE7, 0xEB));
+            cb.setLineWidth(0.5f);
+            cb.moveTo(doc.leftMargin(), y + 10);
+            cb.lineTo(doc.right(), y + 10);
+            cb.stroke();
+
+            ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
+                    new Phrase("Generated by CodeShield AI", HF),
+                    doc.leftMargin(), y, 0);
+
+            ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
+                    new Phrase(date, HF),
+                    center, y, 0);
+
+            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
+                    new Phrase("Page " + writer.getPageNumber(), PG),
+                    doc.right(), y, 0);
+        }
+
+        private String cap(String s) {
+            return (s == null || s.isEmpty()) ? s : s.substring(0, 1).toUpperCase() + s.substring(1);
         }
     }
 }
