@@ -58,7 +58,8 @@
       "Bash(jar tf:*)",
       "Bash(./mvnw dependency:resolve -q)",
       "Read(//c/Users/rutik/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/4.0.5/**)",
-      "Read(//c/Users/rutik/.m2/repository/org/springframework/boot/**)"
+      "Read(//c/Users/rutik/.m2/repository/org/springframework/boot/**)",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyCkO8YpAz8nPMRvN2UnCdHwmd8PAAGPk4s\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\rutik\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.21.2"

@@ -1,155 +1,80 @@
-<div class="app-wrapper">
+<footer class="relative mt-auto" style="border-top: 1px solid var(--border-default);">
 
-  <!-- Footer -->
-  <footer class="relative mt-auto" style="background: linear-gradient(180deg, var(--bg-primary), var(--bg-surface));">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-    <!-- Main Footer -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 lg:pt-20 pb-8">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8">
+    <!-- Top Row: Brand + Links + Social -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 sm:gap-4">
 
-        <!-- Brand Column -->
-        <div class="lg:col-span-4 text-center sm:text-left">
-          <a routerLink="/" class="inline-flex items-center gap-2.5 mb-5 group">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:shadow-lg"
-                 style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8);
-                        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
-              <svg class="w-5 h-5 text-white transition-transform duration-300 group-hover:scale-110"
-                   fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.5 3.64v7.36L12 18.82l-6.5-3.64V7.82L12 4.18z"/>
-                <path d="M12 8a1.5 1.5 0 00-1.5 1.5v3a1.5 1.5 0 003 0v-3A1.5 1.5 0 0012 8zm0 7a1 1 0 100 2 1 1 0 000-2z"/>
-              </svg>
-            </div>
-            <span class="text-lg font-bold tracking-tight" style="color: var(--text-primary);">
-              CodeShield <span style="color: var(--color-primary);">AI</span>
-            </span>
+      <!-- Brand -->
+      <a routerLink="/" class="flex items-center gap-2 group shrink-0">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300"
+             style="background: linear-gradient(135deg, var(--color-primary), #1D4ED8);">
+          <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.5 3.64v7.36L12 18.82l-6.5-3.64V7.82L12 4.18z"/>
+          </svg>
+        </div>
+        <span class="text-sm font-semibold" style="color: var(--text-primary);">
+          CodeShield <span style="color: var(--color-primary);">AI</span>
+        </span>
+      </a>
+
+      <!-- Nav Links — single horizontal row -->
+      <nav class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        @for (link of productLinks; track link.label) {
+          <a [routerLink]="link.route"
+             class="text-xs transition-colors duration-200 hover:text-white"
+             style="color: var(--text-tertiary);">
+            {{ link.label }}
           </a>
+        }
+        @for (link of sectionLinks; track link.label) {
+          <a (click)="scrollTo(link.fragment)"
+             class="text-xs transition-colors duration-200 hover:text-white cursor-pointer"
+             style="color: var(--text-tertiary);">
+            {{ link.label }}
+          </a>
+        }
+        @for (link of resourceLinks; track link.label) {
+          <a [href]="link.href" target="_blank" rel="noopener noreferrer"
+             class="text-xs transition-colors duration-200 hover:text-white"
+             style="color: var(--text-tertiary);">
+            {{ link.label }}
+          </a>
+        }
+      </nav>
 
-          <p class="text-sm leading-relaxed max-w-xs mx-auto sm:mx-0 mb-6"
-             style="color: var(--text-secondary);">
-            Instant AI-powered code reviews with security vulnerability detection, fix suggestions, and quality scoring.
-          </p>
-
-          <!-- Social Icons -->
-          <div class="flex items-center gap-3 justify-center sm:justify-start">
-            @for (social of socialLinks; track social.label) {
-              <a [href]="social.href" target="_blank" rel="noopener noreferrer"
-                 [attr.aria-label]="social.label"
-                 class="group/icon w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300
-                        hover:-translate-y-1 hover:shadow-lg cursor-pointer"
-                 style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);"
-                 onmouseover="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 4px 20px rgba(59,130,246,0.25)';"
-                 onmouseout="this.style.borderColor='var(--border-default)'; this.style.boxShadow='none';">
-                <svg class="w-4 h-4 transition-colors duration-300"
-                     style="color: var(--text-tertiary);"
-                     onmouseover="this.style.color='var(--color-primary)';"
-                     onmouseout="this.style.color='var(--text-tertiary)';"
-                     fill="currentColor" viewBox="0 0 24 24">
-                  <path [attr.d]="social.icon"/>
-                </svg>
-              </a>
-            }
-          </div>
-        </div>
-
-        <!-- Product Links -->
-        <div class="lg:col-span-2 lg:col-start-6 text-center sm:text-left">
-          <h4 class="text-xs font-semibold uppercase tracking-widest mb-4 sm:mb-5"
-              style="color: var(--text-primary);">
-            Product
-          </h4>
-          <ul class="space-y-3">
-            @for (link of productLinks; track link.label) {
-              <li>
-                <a [routerLink]="link.route"
-                   class="footer-link text-sm transition-all duration-300 inline-flex items-center gap-1.5"
-                   style="color: var(--text-secondary);">
-                  {{ link.label }}
-                </a>
-              </li>
-            }
-          </ul>
-        </div>
-
-        <!-- Explore Links -->
-        <div class="lg:col-span-2 text-center sm:text-left">
-          <h4 class="text-xs font-semibold uppercase tracking-widest mb-4 sm:mb-5"
-              style="color: var(--text-primary);">
-            Explore
-          </h4>
-          <ul class="space-y-3">
-            @for (link of sectionLinks; track link.label) {
-              <li>
-                <a (click)="scrollTo(link.fragment)"
-                   class="footer-link text-sm transition-all duration-300 inline-flex items-center gap-1.5 cursor-pointer"
-                   style="color: var(--text-secondary);">
-                  {{ link.label }}
-                </a>
-              </li>
-            }
-          </ul>
-        </div>
-
-        <!-- Resource Links -->
-        <div class="lg:col-span-2 text-center sm:text-left">
-          <h4 class="text-xs font-semibold uppercase tracking-widest mb-4 sm:mb-5"
-              style="color: var(--text-primary);">
-            Resources
-          </h4>
-          <ul class="space-y-3">
-            @for (link of resourceLinks; track link.label) {
-              <li>
-                <a [href]="link.href" target="_blank" rel="noopener noreferrer"
-                   class="footer-link text-sm transition-all duration-300 inline-flex items-center gap-1.5"
-                   style="color: var(--text-secondary);">
-                  {{ link.label }}
-                  <svg class="w-3 h-3 opacity-0 -translate-x-1 transition-all duration-300"
-                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                  </svg>
-                </a>
-              </li>
-            }
-          </ul>
-        </div>
-      </div>
-
-      <!-- Divider -->
-      <div class="mt-12 sm:mt-16 mb-6 sm:mb-8 h-px"
-           style="background: linear-gradient(90deg, transparent, var(--border-default), var(--border-hover), var(--border-default), transparent);">
-      </div>
-
-      <!-- Bottom Bar -->
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-          <p class="text-xs" style="color: var(--text-tertiary);">
-            &copy; {{ currentYear }} CodeShield AI
-          </p>
-          <span class="hidden sm:inline text-xs" style="color: var(--border-hover);">&middot;</span>
-          <p class="text-xs" style="color: var(--text-tertiary);">
-            Built with
-            <span class="inline-block animate-pulse" style="color: var(--color-critical);">&#9829;</span>
-            by Rutik
-          </p>
-        </div>
-
-        <!-- Keyboard Hint -->
-        <p class="text-xs hidden sm:flex items-center gap-1.5" style="color: var(--text-tertiary);">
-          Press
-          <kbd class="px-1.5 py-0.5 rounded text-xs font-mono"
-               style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">Ctrl</kbd>
-          <span>+</span>
-          <kbd class="px-1.5 py-0.5 rounded text-xs font-mono"
-               style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">K</kbd>
-          for commands
-        </p>
+      <!-- Social Icons -->
+      <div class="flex items-center gap-2 shrink-0">
+        @for (social of socialLinks; track social.label) {
+          <a [href]="social.href" target="_blank" rel="noopener noreferrer"
+             [attr.aria-label]="social.label"
+             class="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5"
+             style="color: var(--text-tertiary);"
+             onmouseover="this.style.color='var(--text-primary)'; this.style.background='var(--bg-surface-hover)'"
+             onmouseout="this.style.color='var(--text-tertiary)'; this.style.background='transparent'">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+              <path [attr.d]="social.icon"/>
+            </svg>
+          </a>
+        }
       </div>
     </div>
 
-    <!-- Background Glow -->
-    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-32 rounded-full blur-3xl pointer-events-none opacity-[0.04]"
-         style="background: var(--color-primary);">
+    <!-- Bottom Row: Copyright + Kbd -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 mt-5 pt-5"
+         style="border-top: 1px solid var(--border-default);">
+      <p class="text-[11px]" style="color: var(--text-tertiary);">
+        &copy; {{ currentYear }} CodeShield AI &middot; Built by Rutik
+      </p>
+      <p class="text-[11px] hidden sm:flex items-center gap-1" style="color: var(--text-tertiary);">
+        <kbd class="px-1 py-0.5 rounded text-[10px] font-mono"
+             style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">Ctrl</kbd>
+        +
+        <kbd class="px-1 py-0.5 rounded text-[10px] font-mono"
+             style="background: var(--bg-surface-hover); border: 1px solid var(--border-default);">K</kbd>
+        commands
+      </p>
     </div>
-  </footer>
+  </div>
 
-</div>
+</footer>
