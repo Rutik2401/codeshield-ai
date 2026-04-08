@@ -85,7 +85,6 @@ public class GeminiService {
     }
 
     private ReviewResponse callGemini(String prompt) {
-        // Try primary model first, then fallbacks on 503/429
         List<String> modelsToTry = new ArrayList<>();
         modelsToTry.add(model);
         for (String fb : FALLBACK_MODELS) {
@@ -102,19 +101,44 @@ public class GeminiService {
                 ObjectMapper lenientMapper = objectMapper.copy();
                 lenientMapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
                 return lenientMapper.readValue(jsonContent, ReviewResponse.class);
-            } catch (WebClientResponseException e) {
-                int status = e.getStatusCode().value();
-                if (status == 503 || status == 429) {
-                    log.warn("Model {} returned {}, trying next fallback...", currentModel, status);
+            } catch (Exception e) {
+                if (isRetryableError(e)) {
+                    log.warn("Model {} failed ({}), trying next...", currentModel, extractStatus(e));
                     lastError = e;
                     continue;
                 }
-                throw new RuntimeException("Gemini API error: " + e.getStatusCode(), e);
-            } catch (Exception e) {
                 throw new RuntimeException("Failed to analyze code: " + e.getMessage(), e);
             }
         }
         throw new RuntimeException("All Gemini models unavailable. Please try again later.", lastError);
+    }
+
+    private boolean isRetryableError(Throwable e) {
+        if (e instanceof WebClientResponseException wce) {
+            int status = wce.getStatusCode().value();
+            return status == 503 || status == 429;
+        }
+        // RetryExhaustedException wraps the original cause
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            if (cause instanceof WebClientResponseException wce) {
+                int status = wce.getStatusCode().value();
+                return status == 503 || status == 429;
+            }
+            cause = cause.getCause();
+        }
+        // "Retries exhausted" means 429 retries failed
+        return e.getMessage() != null && e.getMessage().contains("Retries exhausted");
+    }
+
+    private String extractStatus(Throwable e) {
+        if (e instanceof WebClientResponseException wce) return wce.getStatusCode().toString();
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            if (cause instanceof WebClientResponseException wce) return wce.getStatusCode().toString();
+            cause = cause.getCause();
+        }
+        return e.getMessage();
     }
 
     private String callModel(String modelName, String prompt) {
@@ -137,9 +161,6 @@ public class GeminiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(String.class)
-                .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
-                        .filter(ex -> ex instanceof WebClientResponseException.TooManyRequests)
-                        .maxBackoff(Duration.ofSeconds(5)))
                 .timeout(Duration.ofSeconds(60))
                 .block();
     }
