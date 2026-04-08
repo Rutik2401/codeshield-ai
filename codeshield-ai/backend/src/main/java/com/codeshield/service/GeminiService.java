@@ -38,6 +38,12 @@ public class GeminiService {
     @Value("${app.gemini.model:gemini-2.5-flash}")
     private String model;
 
+    private static final String[] FALLBACK_MODELS = {
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
+    };
+
     public GeminiService(WebClient.Builder builder, PromptService promptService,
                          CodeChunkService chunkService, ObjectMapper objectMapper) {
         this.webClient = builder
@@ -79,52 +85,63 @@ public class GeminiService {
     }
 
     private ReviewResponse callGemini(String prompt) {
-        try {
-            Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(Map.of(
-                            "parts", List.of(Map.of("text", prompt))
-                    )),
-                    "generationConfig", Map.of(
-                            "temperature", 0.0,
-                            "maxOutputTokens", 16384,
-                            "responseMimeType", "application/json"
-                    )
-            );
-
-            String rawResponse = webClient.post()
-                    .uri("/models/{model}:generateContent", model)
-                    .header("X-goog-api-key", apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
-                            .filter(ex -> ex instanceof WebClientResponseException.TooManyRequests)
-                            .maxBackoff(Duration.ofSeconds(10)))
-                    .timeout(Duration.ofSeconds(90))
-                    .block();
-
-            String jsonContent = extractTextFromGeminiResponse(rawResponse);
-            jsonContent = jsonContent.replaceAll("^```json\\s*", "").replaceAll("```\\s*$", "").trim();
-
-            ObjectMapper lenientMapper = objectMapper.copy();
-            lenientMapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
-
-            return lenientMapper.readValue(jsonContent, ReviewResponse.class);
-        } catch (WebClientResponseException e) {
-            String body = e.getResponseBodyAsString();
-            log.error("Gemini API error [{}]: {}", e.getStatusCode(), body);
-            if (body.contains("API_KEY_INVALID")) {
-                throw new RuntimeException("Gemini API key is invalid. Check your GEMINI_API_KEY.", e);
-            } else if (body.contains("RESOURCE_EXHAUSTED") || e.getStatusCode().value() == 429) {
-                throw new RuntimeException("Gemini API quota exceeded. Free tier resets daily — try again later.", e);
-            } else if (e.getStatusCode().value() == 400) {
-                throw new RuntimeException("Gemini API rejected the request. Model may be unavailable or input too large.", e);
-            }
-            throw new RuntimeException("Gemini API error: " + e.getStatusCode(), e);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to analyze code: " + e.getMessage(), e);
+        // Try primary model first, then fallbacks on 503/429
+        List<String> modelsToTry = new ArrayList<>();
+        modelsToTry.add(model);
+        for (String fb : FALLBACK_MODELS) {
+            if (!modelsToTry.contains(fb)) modelsToTry.add(fb);
         }
+
+        Exception lastError = null;
+        for (String currentModel : modelsToTry) {
+            try {
+                String rawResponse = callModel(currentModel, prompt);
+                String jsonContent = extractTextFromGeminiResponse(rawResponse);
+                jsonContent = jsonContent.replaceAll("^```json\\s*", "").replaceAll("```\\s*$", "").trim();
+
+                ObjectMapper lenientMapper = objectMapper.copy();
+                lenientMapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
+                return lenientMapper.readValue(jsonContent, ReviewResponse.class);
+            } catch (WebClientResponseException e) {
+                int status = e.getStatusCode().value();
+                if (status == 503 || status == 429) {
+                    log.warn("Model {} returned {}, trying next fallback...", currentModel, status);
+                    lastError = e;
+                    continue;
+                }
+                throw new RuntimeException("Gemini API error: " + e.getStatusCode(), e);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to analyze code: " + e.getMessage(), e);
+            }
+        }
+        throw new RuntimeException("All Gemini models unavailable. Please try again later.", lastError);
+    }
+
+    private String callModel(String modelName, String prompt) {
+        log.info("Calling Gemini model: {}", modelName);
+        Map<String, Object> requestBody = Map.of(
+                "contents", List.of(Map.of(
+                        "parts", List.of(Map.of("text", prompt))
+                )),
+                "generationConfig", Map.of(
+                        "temperature", 0.0,
+                        "maxOutputTokens", 16384,
+                        "responseMimeType", "application/json"
+                )
+        );
+
+        return webClient.post()
+                .uri("/models/{model}:generateContent", modelName)
+                .header("X-goog-api-key", apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
+                        .filter(ex -> ex instanceof WebClientResponseException.TooManyRequests)
+                        .maxBackoff(Duration.ofSeconds(5)))
+                .timeout(Duration.ofSeconds(60))
+                .block();
     }
 
     private ReviewResponse mergeResults(List<ReviewResponse> results) {
