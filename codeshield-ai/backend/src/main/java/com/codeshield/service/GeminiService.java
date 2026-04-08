@@ -111,6 +111,17 @@ public class GeminiService {
             lenientMapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
 
             return lenientMapper.readValue(jsonContent, ReviewResponse.class);
+        } catch (WebClientResponseException e) {
+            String body = e.getResponseBodyAsString();
+            log.error("Gemini API error [{}]: {}", e.getStatusCode(), body);
+            if (body.contains("API_KEY_INVALID")) {
+                throw new RuntimeException("Gemini API key is invalid. Check your GEMINI_API_KEY.", e);
+            } else if (body.contains("RESOURCE_EXHAUSTED") || e.getStatusCode().value() == 429) {
+                throw new RuntimeException("Gemini API quota exceeded. Free tier resets daily — try again later.", e);
+            } else if (e.getStatusCode().value() == 400) {
+                throw new RuntimeException("Gemini API rejected the request. Model may be unavailable or input too large.", e);
+            }
+            throw new RuntimeException("Gemini API error: " + e.getStatusCode(), e);
         } catch (Exception e) {
             throw new RuntimeException("Failed to analyze code: " + e.getMessage(), e);
         }
