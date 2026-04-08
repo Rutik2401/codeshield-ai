@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
 import java.util.*;
@@ -18,36 +19,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import reactor.util.retry.Retry;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-
 @Service
 public class GeminiService {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
 
-    private final WebClient webClient;
+    private final WebClient geminiClient;
+    private final WebClient groqClient;
+    private final WebClient cerebrasClient;
     private final PromptService promptService;
     private final CodeChunkService chunkService;
     private final ObjectMapper objectMapper;
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     @Value("${app.gemini.api-key}")
-    private String apiKey;
+    private String geminiApiKey;
 
     @Value("${app.gemini.model:gemini-2.5-flash}")
-    private String model;
+    private String geminiModel;
 
-    private static final String[] FALLBACK_MODELS = {
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite"
+    @Value("${app.groq.api-key:}")
+    private String groqApiKey;
+
+    @Value("${app.cerebras.api-key:}")
+    private String cerebrasApiKey;
+
+    // Provider configs: name, models to try
+    private static final String[][] GEMINI_MODELS = {
+        {"gemini-2.5-flash"}, {"gemini-2.0-flash"}, {"gemini-2.0-flash-lite"}
     };
+    private static final String GROQ_MODEL = "llama-3.3-70b-versatile";
+    private static final String CEREBRAS_MODEL = "llama-3.3-70b";
 
     public GeminiService(WebClient.Builder builder, PromptService promptService,
                          CodeChunkService chunkService, ObjectMapper objectMapper) {
-        this.webClient = builder
+        this.geminiClient = builder.clone()
                 .baseUrl("https://generativelanguage.googleapis.com/v1beta")
+                .build();
+        this.groqClient = builder.clone()
+                .baseUrl("https://api.groq.com/openai/v1")
+                .build();
+        this.cerebrasClient = builder.clone()
+                .baseUrl("https://api.cerebras.ai/v1")
                 .build();
         this.promptService = promptService;
         this.chunkService = chunkService;
@@ -58,12 +71,10 @@ public class GeminiService {
         List<CodeChunkService.CodeChunk> chunks = chunkService.chunkCode(code, language);
 
         if (chunks.size() == 1) {
-            // Small file — single request
             String prompt = promptService.buildReviewPrompt(code, language);
-            return callGemini(prompt);
+            return callAI(prompt);
         }
 
-        // Large file — parallel chunk analysis
         log.info("Splitting code into {} chunks for analysis", chunks.size());
 
         List<CompletableFuture<ReviewResponse>> futures = chunks.stream()
@@ -73,7 +84,7 @@ public class GeminiService {
                             chunk.getChunkNumber(), chunk.getTotalChunks(),
                             chunk.getStartLine()
                     );
-                    return callGemini(prompt);
+                    return callAI(prompt);
                 }, executor))
                 .collect(Collectors.toList());
 
@@ -84,69 +95,55 @@ public class GeminiService {
         return mergeResults(results);
     }
 
-    private ReviewResponse callGemini(String prompt) {
-        List<String> modelsToTry = new ArrayList<>();
-        modelsToTry.add(model);
-        for (String fb : FALLBACK_MODELS) {
-            if (!modelsToTry.contains(fb)) modelsToTry.add(fb);
-        }
+    /**
+     * Tries all providers in order: Gemini models → Groq → Cerebras
+     */
+    private ReviewResponse callAI(String prompt) {
+        List<Exception> errors = new ArrayList<>();
 
-        Exception lastError = null;
-        for (String currentModel : modelsToTry) {
+        // 1. Try all Gemini models
+        for (String[] modelArr : GEMINI_MODELS) {
+            String modelName = modelArr[0];
             try {
-                String rawResponse = callModel(currentModel, prompt);
-                String jsonContent = extractTextFromGeminiResponse(rawResponse);
-                jsonContent = jsonContent.replaceAll("^```json\\s*", "").replaceAll("```\\s*$", "").trim();
-
-                ObjectMapper lenientMapper = objectMapper.copy();
-                lenientMapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
-                return lenientMapper.readValue(jsonContent, ReviewResponse.class);
+                String raw = callGemini(modelName, prompt);
+                return parseResponse(extractGeminiText(raw));
             } catch (Exception e) {
-                if (isRetryableError(e)) {
-                    log.warn("Model {} failed ({}), trying next...", currentModel, extractStatus(e));
-                    lastError = e;
-                    continue;
-                }
-                throw new RuntimeException("Failed to analyze code: " + e.getMessage(), e);
+                log.warn("Gemini {} failed: {}", modelName, summarizeError(e));
+                errors.add(e);
             }
         }
-        throw new RuntimeException("All Gemini models unavailable. Please try again later.", lastError);
-    }
 
-    private boolean isRetryableError(Throwable e) {
-        if (e instanceof WebClientResponseException wce) {
-            int status = wce.getStatusCode().value();
-            return status == 503 || status == 429;
-        }
-        // RetryExhaustedException wraps the original cause
-        Throwable cause = e.getCause();
-        while (cause != null) {
-            if (cause instanceof WebClientResponseException wce) {
-                int status = wce.getStatusCode().value();
-                return status == 503 || status == 429;
+        // 2. Try Groq
+        if (groqApiKey != null && !groqApiKey.isBlank()) {
+            try {
+                String raw = callOpenAICompatible(groqClient, groqApiKey, GROQ_MODEL, prompt);
+                return parseResponse(extractOpenAIText(raw));
+            } catch (Exception e) {
+                log.warn("Groq failed: {}", summarizeError(e));
+                errors.add(e);
             }
-            cause = cause.getCause();
         }
-        // "Retries exhausted" means 429 retries failed
-        return e.getMessage() != null && e.getMessage().contains("Retries exhausted");
+
+        // 3. Try Cerebras
+        if (cerebrasApiKey != null && !cerebrasApiKey.isBlank()) {
+            try {
+                String raw = callOpenAICompatible(cerebrasClient, cerebrasApiKey, CEREBRAS_MODEL, prompt);
+                return parseResponse(extractOpenAIText(raw));
+            } catch (Exception e) {
+                log.warn("Cerebras failed: {}", summarizeError(e));
+                errors.add(e);
+            }
+        }
+
+        throw new RuntimeException("All AI providers failed. Tried " + errors.size() +
+                " options. Please try again later.");
     }
 
-    private String extractStatus(Throwable e) {
-        if (e instanceof WebClientResponseException wce) return wce.getStatusCode().toString();
-        Throwable cause = e.getCause();
-        while (cause != null) {
-            if (cause instanceof WebClientResponseException wce) return wce.getStatusCode().toString();
-            cause = cause.getCause();
-        }
-        return e.getMessage();
-    }
-
-    private String callModel(String modelName, String prompt) {
-        log.info("Calling Gemini model: {}", modelName);
-        Map<String, Object> requestBody = Map.of(
-                "contents", List.of(Map.of(
-                        "parts", List.of(Map.of("text", prompt))
-                )),
+    // ═══ Gemini API ═══
+    private String callGemini(String modelName, String prompt) {
+        log.info("Trying Gemini: {}", modelName);
+        Map<String, Object> body = Map.of(
+                "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
                 "generationConfig", Map.of(
                         "temperature", 0.0,
                         "maxOutputTokens", 16384,
@@ -154,21 +151,84 @@ public class GeminiService {
                 )
         );
 
-        return webClient.post()
+        return geminiClient.post()
                 .uri("/models/{model}:generateContent", modelName)
-                .header("X-goog-api-key", apiKey)
+                .header("X-goog-api-key", geminiApiKey)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestBody)
+                .bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(Duration.ofSeconds(60))
                 .block();
     }
 
+    private String extractGeminiText(String raw) {
+        try {
+            return objectMapper.readTree(raw).at("/candidates/0/content/parts/0/text").asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse Gemini response", e);
+        }
+    }
+
+    // ═══ OpenAI-compatible API (Groq & Cerebras) ═══
+    private String callOpenAICompatible(WebClient client, String apiKey, String model, String prompt) {
+        log.info("Trying OpenAI-compatible: {} ({})", model, client.toString());
+
+        String systemPrompt = "You are a code reviewer. Return ONLY valid JSON, no markdown, no extra text.";
+
+        Map<String, Object> body = Map.of(
+                "model", model,
+                "messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", prompt)
+                ),
+                "temperature", 0.0,
+                "max_tokens", 16384,
+                "response_format", Map.of("type", "json_object")
+        );
+
+        return client.post()
+                .uri("/chat/completions")
+                .header("Authorization", "Bearer " + apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(60))
+                .block();
+    }
+
+    private String extractOpenAIText(String raw) {
+        try {
+            return objectMapper.readTree(raw).at("/choices/0/message/content").asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse OpenAI-compatible response", e);
+        }
+    }
+
+    // ═══ Common ═══
+    private ReviewResponse parseResponse(String jsonContent) {
+        try {
+            jsonContent = jsonContent.replaceAll("^```json\\s*", "").replaceAll("```\\s*$", "").trim();
+            ObjectMapper lenient = objectMapper.copy();
+            lenient.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
+            return lenient.readValue(jsonContent, ReviewResponse.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse AI response: " + e.getMessage(), e);
+        }
+    }
+
+    private String summarizeError(Exception e) {
+        if (e instanceof WebClientResponseException wce) {
+            return wce.getStatusCode() + ": " + wce.getResponseBodyAsString().substring(0, Math.min(200, wce.getResponseBodyAsString().length()));
+        }
+        return e.getMessage();
+    }
+
+    // ═══ Merge chunk results ═══
     private ReviewResponse mergeResults(List<ReviewResponse> results) {
         ReviewResponse merged = new ReviewResponse();
 
-        // Merge all issues with unique IDs
         List<ReviewResponse.Issue> allIssues = new ArrayList<>();
         Set<String> seenTitles = new HashSet<>();
         int issueCounter = 1;
@@ -176,7 +236,6 @@ public class GeminiService {
         for (ReviewResponse result : results) {
             if (result.getIssues() != null) {
                 for (ReviewResponse.Issue issue : result.getIssues()) {
-                    // Deduplicate by title (overlap regions may produce duplicates)
                     if (seenTitles.add(issue.getTitle())) {
                         issue.setId("ISS-" + String.format("%03d", issueCounter++));
                         allIssues.add(issue);
@@ -186,7 +245,6 @@ public class GeminiService {
         }
         merged.setIssues(allIssues);
 
-        // Merge security audit
         ReviewResponse.SecurityAudit mergedAudit = new ReviewResponse.SecurityAudit();
         List<ReviewResponse.Vulnerability> allVulns = new ArrayList<>();
         Set<String> seenOwasp = new HashSet<>();
@@ -198,14 +256,10 @@ public class GeminiService {
                 ReviewResponse.SecurityAudit audit = result.getSecurityAudit();
                 if (audit.getVulnerabilities() != null) {
                     for (ReviewResponse.Vulnerability vuln : audit.getVulnerabilities()) {
-                        if (seenOwasp.add(vuln.getOwasp())) {
-                            allVulns.add(vuln);
-                        }
+                        if (seenOwasp.add(vuln.getOwasp())) allVulns.add(vuln);
                     }
                 }
-                if (audit.getRecommendations() != null) {
-                    allRecs.addAll(audit.getRecommendations());
-                }
+                if (audit.getRecommendations() != null) allRecs.addAll(audit.getRecommendations());
                 worstRisk = worstSeverity(worstRisk, audit.getRiskLevel());
             }
         }
@@ -214,7 +268,6 @@ public class GeminiService {
         mergedAudit.setRiskLevel(worstRisk);
         merged.setSecurityAudit(mergedAudit);
 
-        // Calculate merged metrics
         ReviewResponse.Metrics mergedMetrics = new ReviewResponse.Metrics();
         int critical = 0, high = 0, medium = 0, low = 0;
         for (ReviewResponse.Issue issue : allIssues) {
@@ -232,36 +285,16 @@ public class GeminiService {
         mergedMetrics.setLow(low);
         merged.setMetrics(mergedMetrics);
 
-        // Average score across chunks
-        int avgScore = (int) results.stream()
-                .mapToInt(ReviewResponse::getScore)
-                .average()
-                .orElse(50);
+        int avgScore = (int) results.stream().mapToInt(ReviewResponse::getScore).average().orElse(50);
         merged.setScore(avgScore);
-
-        // Combined summary
         merged.setSummary("Analyzed in " + results.size() + " chunks. Found " +
-                allIssues.size() + " issue(s). " +
-                results.get(0).getSummary());
+                allIssues.size() + " issue(s). " + results.get(0).getSummary());
 
         return merged;
     }
 
     private String worstSeverity(String a, String b) {
-        Map<String, Integer> rank = Map.of(
-                "safe", 0, "low", 1, "medium", 2, "high", 3, "critical", 4
-        );
-        int rankA = rank.getOrDefault(a, 0);
-        int rankB = rank.getOrDefault(b, 0);
-        return rankA >= rankB ? a : b;
-    }
-
-    private String extractTextFromGeminiResponse(String rawResponse) {
-        try {
-            JsonNode root = objectMapper.readTree(rawResponse);
-            return root.at("/candidates/0/content/parts/0/text").asText();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Gemini response", e);
-        }
+        Map<String, Integer> rank = Map.of("safe", 0, "low", 1, "medium", 2, "high", 3, "critical", 4);
+        return rank.getOrDefault(a, 0) >= rank.getOrDefault(b, 0) ? a : b;
     }
 }
