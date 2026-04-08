@@ -186,6 +186,11 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
       this.reviewCode();
     });
 
+    // Ctrl+S to export PDF
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      if (this.review()) this.exportPdf();
+    });
+
     // Track line/char count
     editor.onDidChangeModelContent(() => {
       const model = editor.getModel();

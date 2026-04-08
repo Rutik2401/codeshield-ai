@@ -40,8 +40,7 @@ export class CommandPaletteComponent {
       { id: 'review', label: 'Review Code', shortcut: 'Ctrl+Enter', icon: '\u26A1', category: 'Actions', action: () => this.router.navigate(['/reviewer']) },
       { id: 'dashboard', label: 'Open Dashboard', icon: '\uD83D\uDCCA', category: 'Navigation', action: () => this.router.navigate(['/dashboard']) },
       { id: 'home', label: 'Go Home', icon: '\uD83C\uDFE0', category: 'Navigation', action: () => this.router.navigate(['/']) },
-      { id: 'theme', label: 'Toggle Theme', icon: '\uD83C\uDF19', category: 'Settings', action: () => document.body.classList.toggle('dark') },
-      { id: 'github', label: 'View on GitHub', icon: '\uD83D\uDC19', category: 'Links', action: () => window.open('https://github.com/rutik/codeshield-ai', '_blank') },
+      { id: 'github', label: 'View on GitHub', icon: '\uD83D\uDC19', category: 'Links', action: () => window.open('https://github.com/Rutik2401/codeshield-ai', '_blank') },
     ];
     this.filteredCommands.set(this.commands);
   }

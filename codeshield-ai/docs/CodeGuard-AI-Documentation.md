@@ -257,7 +257,7 @@ npx tailwindcss init
 │   │   │   │   ├── review-engine.service.ts             # Builds prompts, parses AI responses
 │   │   │   │   ├── export.service.ts                    # Generates PDF and Markdown files
 │   │   │   │   ├── history.service.ts                   # Saves/loads reviews from localStorage
-│   │   │   │   ├── theme.service.ts                     # Toggles dark/light mode, saves preference
+│   │   │   │   ├── theme.service.ts                     # Dark mode styling (dark-only UI)
 │   │   │   │   ├── loading.service.ts                   # Global loading state (BehaviorSubject)
 │   │   │   │   └── toast.service.ts                     # Wrapper around ngx-sonner for notifications
 │   │   │   └── constants/
@@ -335,7 +335,7 @@ npx tailwindcss init
 │   │   │
 │   │   ├── layout/                                      # --- LAYOUT COMPONENTS (appear on every page) ---
 │   │   │   ├── navbar/
-│   │   │   │   └── navbar.component.ts                  # Top nav: logo, links (Home, Reviewer, Dashboard), theme toggle
+│   │   │   │   └── navbar.component.ts                  # Top nav: logo, links (Home, Reviewer, Dashboard)
 │   │   │   ├── footer/
 │   │   │   │   └── footer.component.ts                  # Footer: copyright, GitHub link, social links
 │   │   │   └── sidebar/
@@ -602,7 +602,7 @@ public class GeminiService {
 **Home Page (Landing)**
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Navbar: [Logo]  Home  Reviewer  Dashboard  [Theme] │
+│  Navbar: [Logo]  Home  Reviewer  Dashboard           │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │           {PRODUCT_NAME}                              │
@@ -711,7 +711,6 @@ npx vercel deploy
 - [ ] Review history dashboard with search & filter
 - [ ] Stats cards & charts (issues by type, score over time)
 - [ ] PDF/Markdown export
-- [ ] Dark/Light theme toggle
 - [ ] Loading skeletons & toast notifications
 - [ ] Responsive design (mobile-friendly)
 - [ ] Unit tests for services (Angular + Spring Boot)
