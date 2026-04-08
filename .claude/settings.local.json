@@ -62,7 +62,21 @@
       "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyCkO8YpAz8nPMRvN2UnCdHwmd8PAAGPk4s\")",
       "Bash(timeout 30 bash -c 'while ! grep -q \"Started\\\\|failed\\\\|ERROR\\\\|Application run\" /c/Users/rutik/AppData/Local/Temp/claude/d--AI/601176ee-55ea-4b63-ae85-d86001c32bcf/tasks/b6rwfkkoe.output 2>/dev/null; do sleep 2; done')",
       "Read(//c/Users/rutik/AppData/Local/Temp/claude/d--AI/601176ee-55ea-4b63-ae85-d86001c32bcf/tasks/**)",
-      "Bash(grep -n \"truncate\\\\|highlight\" frontend/src/app/shared/pipes/*.ts)"
+      "Bash(grep -n \"truncate\\\\|highlight\" frontend/src/app/shared/pipes/*.ts)",
+      "WebFetch(domain:codearmor.vercel.app)",
+      "WebFetch(domain:codevigil.vercel.app)",
+      "WebFetch(domain:auditlens.vercel.app)",
+      "WebFetch(domain:codepulse.vercel.app)",
+      "WebFetch(domain:sentrix.vercel.app)",
+      "WebFetch(domain:revidex.vercel.app)",
+      "WebFetch(domain:vaultik.vercel.app)",
+      "WebFetch(domain:codeguardai.vercel.app)",
+      "WebFetch(domain:shieldcode.vercel.app)",
+      "WebFetch(domain:codereviewer-ai.vercel.app)",
+      "WebFetch(domain:codeshield-pro.vercel.app)",
+      "WebFetch(domain:codeshield-ai-v8wm.onrender.com)",
+      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyACpqpoQYIVbCIjk4C6VpR-qRUsoje60es\")",
+      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyACpqpoQYIVbCIjk4C6VpR-qRUsoje60es\" -H \"Content-Type: application/json\" -d '{\"contents\":[{\"parts\":[{\"text\":\"Say hello\"}]}]}')"
     ],
     "additionalDirectories": [
       "C:\\Users\\rutik\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.21.2"
