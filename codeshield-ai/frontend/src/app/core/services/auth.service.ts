@@ -1,5 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export interface User {
   id?: string;
@@ -16,7 +17,7 @@ interface AuthResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = 'http://localhost:8081/api/v1/auth';
+  private apiUrl = `${environment.apiUrl}/auth`;
   private http = inject(HttpClient);
 
   isLoggedIn = signal(this.hasToken());

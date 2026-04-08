@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-oauth-callback',
@@ -28,7 +29,7 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
-    this.http.post<any>('http://localhost:8081/api/v1/auth/oauth2/google/callback', { code })
+    this.http.post<any>(`${environment.apiUrl}/auth/oauth2/google/callback`, { code })
       .subscribe({
         next: (res) => {
           this.auth.handleOAuthResponse(res);
