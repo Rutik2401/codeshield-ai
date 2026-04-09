@@ -85,6 +85,17 @@
                     <div class="w-2 h-2 rounded-full" [style.background]="repo.autoReview ? '#22c55e' : 'var(--text-tertiary)'"></div>
                     Auto-review {{ repo.autoReview ? 'ON' : 'OFF' }}
                   </button>
+                  <!-- Trigger PR review -->
+                  <div class="flex items-center gap-1">
+                    <input type="number" [id]="'pr-' + repo.id" placeholder="PR #" min="1"
+                           class="w-16 px-2 py-1.5 rounded-lg text-xs text-center outline-none"
+                           style="background: var(--bg-surface-hover); color: var(--text-primary); border: 1px solid var(--border-default);">
+                    <button (click)="triggerReview(repo)"
+                            class="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all hover:-translate-y-0.5"
+                            style="background: var(--color-primary); color: white;">
+                      Review
+                    </button>
+                  </div>
                   <!-- View PR reviews -->
                   <a [routerLink]="['/repositories', repo.id, 'reviews']"
                      class="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all"

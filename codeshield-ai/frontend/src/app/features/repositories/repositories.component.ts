@@ -43,4 +43,12 @@ export class RepositoriesComponent {
   toggleActive(repo: ConnectedRepo): void {
     this.repoService.updateSettings(repo.id, { isActive: !repo.isActive });
   }
+
+  triggerReview(repo: ConnectedRepo): void {
+    const input = document.getElementById('pr-' + repo.id) as HTMLInputElement;
+    const prNumber = parseInt(input?.value, 10);
+    if (!prNumber || prNumber < 1) return;
+    this.repoService.triggerPrReview(repo.id, prNumber);
+    input.value = '';
+  }
 }
