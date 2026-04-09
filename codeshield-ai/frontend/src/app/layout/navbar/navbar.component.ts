@@ -21,7 +21,8 @@ export class NavbarComponent {
       return [
         { path: '/dashboard', label: 'Dashboard', exact: false },
         { path: '/reviewer', label: 'Reviewer', exact: false },
-        { path: '/learn', label: 'Learn', exact: false },
+        { path: '/repositories', label: 'Repos', exact: false },
+        { path: '/pr-reviews', label: 'PR Reviews', exact: false },
       ];
     }
 

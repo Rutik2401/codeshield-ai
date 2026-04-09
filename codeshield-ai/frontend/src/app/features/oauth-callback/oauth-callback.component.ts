@@ -24,12 +24,18 @@ export class OAuthCallbackComponent implements OnInit {
 
   ngOnInit(): void {
     const code = this.route.snapshot.queryParamMap.get('code');
+    const provider = this.route.snapshot.queryParamMap.get('provider') || 'google';
+
     if (!code) {
       this.router.navigate(['/']);
       return;
     }
 
-    this.http.post<any>(`${environment.apiUrl}/auth/oauth2/google/callback`, { code })
+    const callbackUrl = provider === 'github'
+      ? `${environment.apiUrl}/auth/oauth2/github/callback`
+      : `${environment.apiUrl}/auth/oauth2/google/callback`;
+
+    this.http.post<any>(callbackUrl, { code })
       .subscribe({
         next: (res) => {
           this.auth.handleOAuthResponse(res);

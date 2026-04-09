@@ -4,6 +4,7 @@ import com.codeshield.dto.AuthResponse;
 import com.codeshield.entity.User;
 import com.codeshield.repository.UserRepository;
 import com.codeshield.security.JwtService;
+import com.codeshield.service.GitHubService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -24,6 +25,7 @@ public class OAuth2Controller {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
+    private final GitHubService gitHubService;
 
     @Value("${app.google.client-id:}")
     private String clientId;
@@ -114,6 +116,55 @@ public class OAuth2Controller {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             throw new RuntimeException("Google OAuth failed: " + e.getMessage(), e);
+        }
+    }
+
+    // ═══ GitHub OAuth ═══
+
+    @GetMapping("/github/url")
+    public ResponseEntity<Map<String, String>> getGitHubAuthUrl() {
+        return ResponseEntity.ok(Map.of("url", gitHubService.getOAuthUrl()));
+    }
+
+    @PostMapping("/github/callback")
+    public ResponseEntity<AuthResponse> handleGitHubCallback(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+
+        try {
+            String accessToken = gitHubService.exchangeCodeForToken(code);
+            JsonNode userInfo = gitHubService.getAuthenticatedUser(accessToken);
+            String email = gitHubService.getUserEmail(accessToken);
+            String name = userInfo.has("name") && !userInfo.get("name").isNull()
+                    ? userInfo.get("name").asText()
+                    : userInfo.get("login").asText();
+            String githubId = String.valueOf(userInfo.get("id").asLong());
+
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                User newUser = User.builder()
+                        .email(email)
+                        .name(name)
+                        .avatar(name.substring(0, 1).toUpperCase())
+                        .provider(User.Provider.GITHUB)
+                        .providerId(githubId)
+                        .build();
+                return userRepository.save(newUser);
+            });
+
+            AuthResponse response = AuthResponse.builder()
+                    .token(jwtService.generateToken(user))
+                    .refreshToken(jwtService.generateRefreshToken(user))
+                    .user(AuthResponse.UserInfo.builder()
+                            .id(user.getId().toString())
+                            .name(user.getName())
+                            .email(user.getEmail())
+                            .avatar(user.getAvatar())
+                            .build())
+                    .githubAccessToken(accessToken)
+                    .build();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            throw new RuntimeException("GitHub OAuth failed: " + e.getMessage(), e);
         }
     }
 }

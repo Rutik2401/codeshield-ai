@@ -60,6 +60,10 @@ export class AuthModalComponent {
     this.auth.googleSignIn();
   }
 
+  githubSignIn(): void {
+    this.auth.githubSignIn();
+  }
+
   onFocus(event: Event): void {
     (event.target as HTMLElement).style.borderColor = 'var(--color-primary)';
     (event.target as HTMLElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.15)';

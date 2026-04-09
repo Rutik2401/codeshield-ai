@@ -13,6 +13,7 @@ interface AuthResponse {
   token: string;
   refreshToken: string;
   user: { id: string; name: string; email: string; avatar: string };
+  githubAccessToken?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -90,6 +91,23 @@ export class AuthService {
       });
   }
 
+  githubSignIn(): void {
+    this.http.get<{ url: string }>(`${this.apiUrl}/oauth2/github/url`)
+      .subscribe({
+        next: (res) => {
+          this.showAuthModal.set(false);
+          window.location.href = res.url;
+        },
+        error: () => {
+          this.toastMessage.set('GitHub sign-in unavailable');
+        },
+      });
+  }
+
+  getGitHubToken(): string | null {
+    return localStorage.getItem('github_access_token');
+  }
+
   handleOAuthResponse(res: any): void {
     this.storeAuth(res);
     this.showToast('Welcome!');
@@ -107,6 +125,9 @@ export class AuthService {
     localStorage.setItem('auth_token', res.token);
     localStorage.setItem('auth_refresh_token', res.refreshToken);
     localStorage.setItem('auth_user', JSON.stringify(res.user));
+    if (res.githubAccessToken) {
+      localStorage.setItem('github_access_token', res.githubAccessToken);
+    }
     this.currentUser.set(res.user);
     this.isLoggedIn.set(true);
   }

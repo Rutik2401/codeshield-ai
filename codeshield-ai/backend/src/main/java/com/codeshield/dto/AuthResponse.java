@@ -9,6 +9,7 @@ public class AuthResponse {
     private String token;
     private String refreshToken;
     private UserInfo user;
+    private String githubAccessToken;
 
     @Data @Builder @AllArgsConstructor
     public static class UserInfo {

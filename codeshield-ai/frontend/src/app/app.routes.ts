@@ -21,6 +21,21 @@ export const routes: Routes = [
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
   },
   {
+    path: 'repositories',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/repositories/repositories.component').then(m => m.RepositoriesComponent),
+  },
+  {
+    path: 'repositories/:id/reviews',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/pr-reviews/pr-reviews.component').then(m => m.PrReviewsComponent),
+  },
+  {
+    path: 'pr-reviews',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/pr-reviews/pr-reviews.component').then(m => m.PrReviewsComponent),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard],
     loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent),

@@ -6,38 +6,50 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "connected_repositories")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
-
-    public enum Provider {
-        LOCAL, GOOGLE, GITHUB
-    }
+public class ConnectedRepository {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(nullable = false)
+    private Long githubRepoId;
 
     @Column(nullable = false)
     private String name;
 
-    private String passwordHash;
+    @Column(nullable = false, length = 512)
+    private String fullName;
 
-    @Column(length = 10)
-    private String avatar;
+    @Column(nullable = false)
+    private String owner;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(length = 100)
     @Builder.Default
-    private Provider provider = Provider.LOCAL;
+    private String defaultBranch = "main";
 
-    private String providerId;
+    @Builder.Default
+    private boolean isPrivate = false;
+
+    @Builder.Default
+    private boolean isActive = true;
+
+    @Builder.Default
+    private boolean autoReview = true;
+
+    private Long webhookId;
+
+    @Column(columnDefinition = "TEXT")
+    private String githubAccessToken;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

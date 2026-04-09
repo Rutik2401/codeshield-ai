@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/review").permitAll()
                 .requestMatchers("/api/v1/export/**").permitAll()
                 .requestMatchers("/api/v1/health").permitAll()
+                .requestMatchers("/api/v1/webhooks/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()
