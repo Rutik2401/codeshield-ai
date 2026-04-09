@@ -1,10 +1,12 @@
 package com.codeshield.service;
 
+import com.codeshield.dto.ReviewHistoryItem;
 import com.codeshield.dto.ReviewResponse;
 import com.codeshield.entity.Review;
 import com.codeshield.entity.User;
 import com.codeshield.repository.ReviewRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +65,52 @@ public class ReviewPersistenceService {
     public Optional<Review> getReviewById(UUID userId, UUID reviewId) {
         return reviewRepository.findById(reviewId)
                 .filter(review -> review.getUser().getId().equals(userId));
+    }
+
+    public List<ReviewHistoryItem> getUserReviewHistory(UUID userId) {
+        return reviewRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::toHistoryItem)
+                .toList();
+    }
+
+    public Optional<ReviewHistoryItem> getReviewHistoryItem(UUID userId, UUID reviewId) {
+        return reviewRepository.findById(reviewId)
+                .filter(r -> r.getUser().getId().equals(userId))
+                .map(this::toHistoryItem);
+    }
+
+    private ReviewHistoryItem toHistoryItem(Review r) {
+        ReviewResponse review = new ReviewResponse();
+        review.setSummary(r.getSummary());
+        review.setScore(r.getScore());
+        review.setIssues(deserialize(r.getIssuesJson(), new TypeReference<>() {}));
+        review.setSecurityAudit(deserialize(r.getSecurityAuditJson(), new TypeReference<>() {}));
+
+        ReviewResponse.Metrics metrics = new ReviewResponse.Metrics();
+        metrics.setTotalIssues(r.getTotalIssues());
+        metrics.setCritical(r.getCritical());
+        metrics.setHigh(r.getHigh());
+        metrics.setMedium(r.getMedium());
+        metrics.setLow(r.getLow());
+        review.setMetrics(metrics);
+
+        return ReviewHistoryItem.builder()
+                .id(r.getId().toString())
+                .code(r.getCode())
+                .language(r.getLanguage())
+                .review(review)
+                .createdAt(r.getCreatedAt())
+                .build();
+    }
+
+    private <T> T deserialize(String json, TypeReference<T> type) {
+        if (json == null) return null;
+        try {
+            return objectMapper.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize JSON", e);
+            return null;
+        }
     }
 
     private String serialize(Object obj) {

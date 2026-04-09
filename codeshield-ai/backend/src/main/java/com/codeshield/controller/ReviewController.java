@@ -1,9 +1,9 @@
 package com.codeshield.controller;
 
 import com.codeshield.dto.ExportRequest;
+import com.codeshield.dto.ReviewHistoryItem;
 import com.codeshield.dto.ReviewRequest;
 import com.codeshield.dto.ReviewResponse;
-import com.codeshield.entity.Review;
 import com.codeshield.service.GeminiService;
 import com.codeshield.service.PdfExportService;
 import com.codeshield.service.ReviewPersistenceService;
@@ -31,27 +31,29 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> reviewCode(@Valid @RequestBody ReviewRequest request) {
         ReviewResponse review = geminiService.analyzeCode(request.getCode(), request.getLanguage());
         UUID userId = getCurrentUserId();
-        reviewPersistenceService.saveReview(userId, request.getCode(), request.getLanguage(), review);
+        if (userId != null) {
+            reviewPersistenceService.saveReview(userId, request.getCode(), request.getLanguage(), review);
+        }
         return ResponseEntity.ok(review);
     }
 
     @GetMapping("/reviews")
-    public ResponseEntity<List<Review>> getUserReviews() {
-        UUID userId = getCurrentUserId();
-        return ResponseEntity.ok(reviewPersistenceService.getUserReviews(userId));
+    public ResponseEntity<List<ReviewHistoryItem>> getUserReviews() {
+        UUID userId = requireUserId();
+        return ResponseEntity.ok(reviewPersistenceService.getUserReviewHistory(userId));
     }
 
     @GetMapping("/reviews/{id}")
-    public ResponseEntity<Review> getReview(@PathVariable UUID id) {
-        UUID userId = getCurrentUserId();
-        return reviewPersistenceService.getReviewById(userId, id)
+    public ResponseEntity<ReviewHistoryItem> getReview(@PathVariable UUID id) {
+        UUID userId = requireUserId();
+        return reviewPersistenceService.getReviewHistoryItem(userId, id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/reviews/{id}")
     public ResponseEntity<Void> deleteReview(@PathVariable UUID id) {
-        UUID userId = getCurrentUserId();
+        UUID userId = requireUserId();
         reviewPersistenceService.deleteReview(userId, id);
         return ResponseEntity.noContent().build();
     }
@@ -73,6 +75,15 @@ public class ReviewController {
     }
 
     private UUID getCurrentUserId() {
-        return (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return principal instanceof UUID ? (UUID) principal : null;
+    }
+
+    private UUID requireUserId() {
+        UUID userId = getCurrentUserId();
+        if (userId == null) {
+            throw new RuntimeException("Authentication required");
+        }
+        return userId;
     }
 }

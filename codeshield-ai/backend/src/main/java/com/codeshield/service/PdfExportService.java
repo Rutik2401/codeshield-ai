@@ -308,13 +308,16 @@ public class PdfExportService {
 
         String[] lines = code.split("\n");
 
-        // === Title bar (traffic lights + tab name) — added directly to doc ===
-        PdfPTable titleBar = new PdfPTable(1);
-        titleBar.setWidthPercentage(94);
-        titleBar.setHorizontalAlignment(Element.ALIGN_CENTER);
-        titleBar.setSpacingBefore(6);
-        titleBar.setSpacingAfter(0);
+        // Wrap title bar + code body in a single outer table so they stay together
+        PdfPTable wrapper = new PdfPTable(1);
+        wrapper.setWidthPercentage(94);
+        wrapper.setHorizontalAlignment(Element.ALIGN_CENTER);
+        wrapper.setSpacingBefore(6);
+        wrapper.setSpacingAfter(12);
+        wrapper.setSplitLate(false);
+        wrapper.setSplitRows(true);
 
+        // === Title bar row ===
         PdfPCell titleCell = new PdfPCell();
         titleCell.setBackgroundColor(titleBarBg);
         titleCell.setBorder(Rectangle.NO_BORDER);
@@ -322,7 +325,6 @@ public class PdfExportService {
         titleCell.setPaddingLeft(12);
 
         Phrase titlePhrase = new Phrase();
-        // Traffic light dots
         titlePhrase.add(new Chunk("\u25CF ", new Font(Font.HELVETICA, 9, Font.BOLD, dotRed)));
         titlePhrase.add(new Chunk("\u25CF ", new Font(Font.HELVETICA, 9, Font.BOLD, dotYellow)));
         titlePhrase.add(new Chunk("\u25CF", new Font(Font.HELVETICA, 9, Font.BOLD, dotGreen)));
@@ -330,20 +332,14 @@ public class PdfExportService {
                 new Font(Font.HELVETICA, 8, Font.NORMAL, tabTextCol)));
         Paragraph titleP = new Paragraph(titlePhrase);
         titleCell.addElement(titleP);
-        titleBar.addCell(titleCell);
-        doc.add(titleBar);
+        wrapper.addCell(titleCell);
 
-        // === Code body (line numbers + code) — flat table, no nesting ===
-        PdfPTable codeTable = new PdfPTable(new float[]{0.8f, 9.2f});
-        codeTable.setWidthPercentage(94);
-        codeTable.setHorizontalAlignment(Element.ALIGN_CENTER);
-        codeTable.setSpacingBefore(0);
-        codeTable.setSpacingAfter(12);
-        codeTable.setSplitLate(false);
-        codeTable.setSplitRows(true);
-
+        // === Code body rows (line numbers + code) ===
         Font numFont = new Font(Font.COURIER, 7.5f, Font.NORMAL, lineNumCol);
         Font codeFont = new Font(Font.COURIER, 8, Font.NORMAL, codeTextCol);
+
+        PdfPTable codeTable = new PdfPTable(new float[]{0.8f, 9.2f});
+        codeTable.setWidthPercentage(100);
 
         for (int i = 0; i < lines.length; i++) {
             // Line number cell
@@ -370,7 +366,14 @@ public class PdfExportService {
             codeTable.addCell(lineCell);
         }
 
-        doc.add(codeTable);
+        // Nest code table inside the wrapper so title bar + code stay together
+        PdfPCell codeCell = new PdfPCell(codeTable);
+        codeCell.setBackgroundColor(editorBg);
+        codeCell.setBorder(Rectangle.NO_BORDER);
+        codeCell.setPadding(0);
+        wrapper.addCell(codeCell);
+
+        doc.add(wrapper);
     }
 
     // ── Security Audit ──

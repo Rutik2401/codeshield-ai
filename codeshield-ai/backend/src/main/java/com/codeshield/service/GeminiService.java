@@ -46,10 +46,11 @@ public class GeminiService {
 
     // Provider configs: name, models to try
     private static final String[][] GEMINI_MODELS = {
-        {"gemini-2.5-flash"}, {"gemini-2.0-flash"}, {"gemini-2.0-flash-lite"}
+        {"gemini-2.5-flash"}, {"gemini-2.5-flash-lite"}, {"gemini-flash-latest"}
     };
     private static final String GROQ_MODEL = "llama-3.3-70b-versatile";
-    private static final String CEREBRAS_MODEL = "llama-3.3-70b";
+    private static final int GROQ_MAX_TOKENS = 4096;
+    private static final String CEREBRAS_MODEL = "llama3.3-70b";
 
     public GeminiService(WebClient.Builder builder, PromptService promptService,
                          CodeChunkService chunkService, ObjectMapper objectMapper) {
@@ -116,7 +117,7 @@ public class GeminiService {
         // 2. Try Groq
         if (groqApiKey != null && !groqApiKey.isBlank()) {
             try {
-                String raw = callOpenAICompatible(groqClient, groqApiKey, GROQ_MODEL, prompt);
+                String raw = callOpenAICompatible(groqClient, groqApiKey, GROQ_MODEL, prompt, GROQ_MAX_TOKENS);
                 return parseResponse(extractOpenAIText(raw));
             } catch (Exception e) {
                 log.warn("Groq failed: {}", summarizeError(e));
@@ -127,7 +128,7 @@ public class GeminiService {
         // 3. Try Cerebras
         if (cerebrasApiKey != null && !cerebrasApiKey.isBlank()) {
             try {
-                String raw = callOpenAICompatible(cerebrasClient, cerebrasApiKey, CEREBRAS_MODEL, prompt);
+                String raw = callOpenAICompatible(cerebrasClient, cerebrasApiKey, CEREBRAS_MODEL, prompt, 16384);
                 return parseResponse(extractOpenAIText(raw));
             } catch (Exception e) {
                 log.warn("Cerebras failed: {}", summarizeError(e));
@@ -135,8 +136,11 @@ public class GeminiService {
             }
         }
 
+        String details = errors.stream()
+                .map(e -> summarizeError(e))
+                .collect(Collectors.joining(" | "));
         throw new RuntimeException("All AI providers failed. Tried " + errors.size() +
-                " options. Please try again later.");
+                " options. Details: " + details);
     }
 
     // ═══ Gemini API ═══
@@ -171,7 +175,7 @@ public class GeminiService {
     }
 
     // ═══ OpenAI-compatible API (Groq & Cerebras) ═══
-    private String callOpenAICompatible(WebClient client, String apiKey, String model, String prompt) {
+    private String callOpenAICompatible(WebClient client, String apiKey, String model, String prompt, int maxTokens) {
         log.info("Trying OpenAI-compatible: {} ({})", model, client.toString());
 
         String systemPrompt = "You are a code reviewer. Return ONLY valid JSON, no markdown, no extra text.";
@@ -183,7 +187,7 @@ public class GeminiService {
                         Map.of("role", "user", "content", prompt)
                 ),
                 "temperature", 0.0,
-                "max_tokens", 16384,
+                "max_tokens", maxTokens,
                 "response_format", Map.of("type", "json_object")
         );
 
@@ -220,7 +224,7 @@ public class GeminiService {
 
     private String summarizeError(Exception e) {
         if (e instanceof WebClientResponseException wce) {
-            return wce.getStatusCode() + ": " + wce.getResponseBodyAsString().substring(0, Math.min(200, wce.getResponseBodyAsString().length()));
+            return wce.getStatusCode() + ": " + wce.getResponseBodyAsString().substring(0, Math.min(500, wce.getResponseBodyAsString().length()));
         }
         return e.getMessage();
     }

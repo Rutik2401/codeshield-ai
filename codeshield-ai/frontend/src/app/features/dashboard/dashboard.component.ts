@@ -1,9 +1,8 @@
-import { Component, inject, computed, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, inject, computed, signal, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HistoryService } from '../../core/services/history.service';
 import { ScoreCircleComponent } from '../../shared/components/score-circle/score-circle.component';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
-import { FormsModule } from '@angular/forms';
 import { AnimationService } from '../../core/services/animation.service';
 import { gsap } from 'gsap';
 import { BaseChartDirective } from 'ng2-charts';
@@ -12,13 +11,17 @@ import { ChartConfiguration } from 'chart.js';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, ScoreCircleComponent, TimeAgoPipe, FormsModule, BaseChartDirective],
+  imports: [RouterLink, ScoreCircleComponent, TimeAgoPipe, BaseChartDirective],
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements AfterViewInit, OnDestroy {
   historyService = inject(HistoryService);
   private anim = inject(AnimationService);
-  searchQuery = '';
+  searchQuery = signal('');
+
+  constructor() {
+    this.historyService.fetchHistory();
+  }
 
   @ViewChild('pageHeader', { static: true }) pageHeader!: ElementRef;
   @ViewChild('statsGrid', { static: true }) statsGrid!: ElementRef;
@@ -197,7 +200,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   hasChartData = computed(() => this.historyService.history().length > 0);
 
   filteredHistory = computed(() => {
-    const q = this.searchQuery.toLowerCase();
+    const q = this.searchQuery().toLowerCase();
     if (!q) return this.historyService.history();
     return this.historyService.history().filter(item =>
       item.language.toLowerCase().includes(q) ||

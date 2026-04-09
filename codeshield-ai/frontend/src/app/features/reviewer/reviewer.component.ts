@@ -1,7 +1,6 @@
 import { Component, inject, signal, AfterViewInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GeminiService } from '../../core/services/gemini.service';
-import { HistoryService } from '../../core/services/history.service';
 import { ExportService } from '../../core/services/export.service';
 import { LoadingService } from '../../core/services/loading.service';
 import { AnimationService } from '../../core/services/animation.service';
@@ -100,7 +99,6 @@ declare const monaco: any;
 })
 export class ReviewerComponent implements AfterViewInit, OnDestroy {
   private geminiService = inject(GeminiService);
-  private historyService = inject(HistoryService);
   private exportService = inject(ExportService);
   private anim = inject(AnimationService);
   loading = inject(LoadingService);
@@ -221,7 +219,6 @@ export class ReviewerComponent implements AfterViewInit, OnDestroy {
       next: (result) => {
         this.stopThinking();
         this.review.set(result);
-        this.historyService.addReview(this.code, this.selectedLanguage, result);
         this.loading.hide();
         setTimeout(() => this.animateResults(), 50);
       },

@@ -1,42 +1,47 @@
 import { Injectable, signal } from '@angular/core';
-import { HistoryItem, ReviewResponse } from '../../models/review.model';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { HistoryItem } from '../../models/review.model';
+import { API_ENDPOINTS } from '../constants/api.constants';
 
 @Injectable({ providedIn: 'root' })
 export class HistoryService {
-  private readonly STORAGE_KEY = 'codeshield-history';
-  history = signal<HistoryItem[]>(this.loadHistory());
+  private apiUrl = environment.apiUrl;
+  history = signal<HistoryItem[]>([]);
+  loading = signal(false);
 
-  private loadHistory(): HistoryItem[] {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    if (!data) return [];
-    return JSON.parse(data).map((item: HistoryItem) => ({
-      ...item,
-      createdAt: new Date(item.createdAt),
-    }));
-  }
+  constructor(private http: HttpClient) {}
 
-  addReview(code: string, language: string, review: ReviewResponse): void {
-    const item: HistoryItem = {
-      id: crypto.randomUUID(),
-      code,
-      language,
-      review,
-      createdAt: new Date(),
-    };
-    const updated = [item, ...this.history()];
-    this.history.set(updated);
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+  fetchHistory(): void {
+    this.loading.set(true);
+    this.http.get<HistoryItem[]>(`${this.apiUrl}${API_ENDPOINTS.REVIEWS}`).subscribe({
+      next: (items) => {
+        this.history.set(items.map(item => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+        })));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
+    });
   }
 
   deleteReview(id: string): void {
-    const updated = this.history().filter(item => item.id !== id);
-    this.history.set(updated);
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+    this.http.delete(`${this.apiUrl}${API_ENDPOINTS.REVIEWS}/${id}`).subscribe({
+      next: () => {
+        this.history.update(items => items.filter(item => item.id !== id));
+      },
+    });
   }
 
   clearHistory(): void {
+    const ids = this.history().map(item => item.id);
+    ids.forEach(id => {
+      this.http.delete(`${this.apiUrl}${API_ENDPOINTS.REVIEWS}/${id}`).subscribe();
+    });
     this.history.set([]);
-    localStorage.removeItem(this.STORAGE_KEY);
   }
 
   getReview(id: string): HistoryItem | undefined {
