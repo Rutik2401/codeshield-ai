@@ -246,6 +246,30 @@ public class GitHubService {
 
             JsonNode json = objectMapper.readTree(response);
             return json.get("id").asLong();
+        } catch (WebClientResponseException e) {
+            log.warn("PR review with inline comments failed ({}), retrying without comments...", e.getStatusCode());
+
+            // Retry without inline comments — line numbers may not match the diff
+            try {
+                Map<String, Object> fallback = new HashMap<>();
+                fallback.put("body", body);
+                fallback.put("event", "COMMENT");
+
+                String response = githubApi.post()
+                        .uri("/repos/{owner}/{repo}/pulls/{pr}/reviews", owner, repo, prNumber)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(fallback)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+
+                JsonNode json = objectMapper.readTree(response);
+                return json.get("id").asLong();
+            } catch (Exception retryEx) {
+                log.error("PR review fallback also failed: {}", retryEx.getMessage());
+                throw new RuntimeException("Failed to post PR review: " + retryEx.getMessage(), retryEx);
+            }
         } catch (Exception e) {
             log.error("Failed to post PR review: {}", e.getMessage());
             throw new RuntimeException("Failed to post PR review: " + e.getMessage(), e);

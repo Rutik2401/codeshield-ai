@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -14,11 +14,12 @@ export interface AppNotification {
 }
 
 @Injectable({ providedIn: 'root' })
-export class NotificationService implements OnDestroy {
+export class NotificationService {
   private apiUrl = `${environment.apiUrl}/notifications`;
   private http = inject(HttpClient);
   private auth = inject(AuthService);
   private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private isTabVisible = true;
 
   notifications = signal<AppNotification[]>([]);
   unreadCount = signal(0);
@@ -29,12 +30,20 @@ export class NotificationService implements OnDestroy {
 
   startPolling(): void {
     if (this.pollInterval) return;
+
+    // Listen for tab visibility changes — stop polling when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+      this.isTabVisible = !document.hidden;
+    });
+
     this.fetchNotifications();
+
+    // Poll every 30s, only when tab is visible and user is logged in
     this.pollInterval = setInterval(() => {
-      if (this.auth.isLoggedIn()) {
+      if (this.auth.isLoggedIn() && this.isTabVisible) {
         this.fetchUnreadCount();
       }
-    }, 10000);
+    }, 30000);
   }
 
   stopPolling(): void {
@@ -44,21 +53,20 @@ export class NotificationService implements OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.stopPolling();
-  }
-
   fetchNotifications(): void {
+    if (!this.auth.isLoggedIn()) return;
+
     this.http.get<AppNotification[]>(this.apiUrl).subscribe({
       next: (items) => {
-        const prev = this.notifications();
+        const prevCount = this.unreadCount();
         this.notifications.set(items);
-        this.unreadCount.set(items.filter(n => !n.isRead).length);
+        const newUnread = items.filter(n => !n.isRead).length;
+        this.unreadCount.set(newUnread);
 
-        // Show toast for new unread notifications
-        if (prev.length > 0 && items.length > prev.length) {
-          const newest = items[0];
-          if (!newest.isRead) {
+        // Show toast only if unread count went up
+        if (newUnread > prevCount && items.length > 0) {
+          const newest = items.find(n => !n.isRead);
+          if (newest) {
             this.latestToast.set(newest);
             setTimeout(() => this.latestToast.set(null), 6000);
           }
@@ -68,12 +76,14 @@ export class NotificationService implements OnDestroy {
   }
 
   fetchUnreadCount(): void {
+    if (!this.auth.isLoggedIn()) return;
+
     this.http.get<{ count: number }>(`${this.apiUrl}/unread-count`).subscribe({
       next: (res) => {
         const prevCount = this.unreadCount();
         this.unreadCount.set(res.count);
 
-        // If count increased, fetch full list to get the new notification for toast
+        // Only fetch full list when there are new notifications
         if (res.count > prevCount) {
           this.fetchNotifications();
         }

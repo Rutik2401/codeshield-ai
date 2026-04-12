@@ -189,28 +189,111 @@ public class PrReviewPipelineService {
     private String buildReviewSummary(String prTitle, List<FileReview> reviews, int score,
                                        int totalIssues, int critical, int high, int medium, int low) {
         StringBuilder sb = new StringBuilder();
-        sb.append("## CodeShield AI Review\n\n");
-        sb.append(String.format("**Score: %d/100** | ", score));
-        sb.append(String.format("**Files Reviewed: %d**\n\n", reviews.size()));
 
+        // Header
+        sb.append("# :shield: Pull Request Review\n\n");
+        String verdict = critical > 0 || high > 2 ? ":x: Request Changes" : totalIssues == 0 ? ":white_check_mark: Approved" : ":warning: Requires Attention";
+        sb.append(String.format("**Overall Assessment:** %s\n", verdict));
+        sb.append(String.format("**Quality Score:** `%d/100`\n", score));
+        sb.append(String.format("**Files Reviewed:** %d\n\n", reviews.size()));
+
+        // Issue summary table
         if (totalIssues > 0) {
-            sb.append("### Issues Found\n");
-            sb.append(String.format("| Critical | High | Medium | Low |\n"));
-            sb.append(String.format("|:---:|:---:|:---:|:---:|\n"));
-            sb.append(String.format("| %d | %d | %d | %d |\n\n", critical, high, medium, low));
+            sb.append("### :bar_chart: Issue Summary\n\n");
+            sb.append("| :red_circle: Critical | :orange_circle: High | :yellow_circle: Medium | :green_circle: Low | **Total** |\n");
+            sb.append("|:---:|:---:|:---:|:---:|:---:|\n");
+            sb.append(String.format("| %d | %d | %d | %d | **%d** |\n\n", critical, high, medium, low, totalIssues));
+
+            // Security concerns count
+            long securityCount = reviews.stream()
+                    .filter(fr -> fr.review.getIssues() != null)
+                    .flatMap(fr -> fr.review.getIssues().stream())
+                    .filter(i -> i.getType() != null && i.getType().toLowerCase().contains("security"))
+                    .count();
+            if (securityCount > 0) {
+                sb.append(String.format(":lock: **Security Concerns:** %d\n\n", securityCount));
+            }
         } else {
-            sb.append("No issues found. Code looks clean!\n\n");
+            sb.append(":white_check_mark: **No issues found.** Code looks clean and ready to merge!\n\n");
         }
+
+        // File-wise breakdown
+        sb.append("---\n\n### :file_folder: File-wise Review\n\n");
 
         for (FileReview fr : reviews) {
-            int issueCount = fr.review.getIssues() != null ? fr.review.getIssues().size() : 0;
-            String icon = issueCount == 0 ? "white_check_mark" : "warning";
-            sb.append(String.format("- :%s: `%s` — Score: %d, Issues: %d\n",
-                    icon, fr.filename, fr.review.getScore(), issueCount));
+            List<ReviewResponse.Issue> issues = fr.review.getIssues();
+            int issueCount = issues != null ? issues.size() : 0;
+            String fileIcon = issueCount == 0 ? ":white_check_mark:" : ":warning:";
+
+            sb.append(String.format("<details>\n<summary>%s <code>%s</code> — Score: %d/100, Issues: %d</summary>\n\n",
+                    fileIcon, fr.filename, fr.review.getScore(), issueCount));
+
+            if (fr.review.getSummary() != null && !fr.review.getSummary().isBlank()) {
+                sb.append(String.format("> %s\n\n", fr.review.getSummary()));
+            }
+
+            if (issues != null && !issues.isEmpty()) {
+                for (ReviewResponse.Issue issue : issues) {
+                    String icon = severityIcon(issue.getSeverity());
+                    String lineRef = issue.getLine() > 0 ? "Line " + issue.getLine() : "General";
+
+                    sb.append(String.format("**%s — %s %s — %s**\n\n",
+                            lineRef, icon, capitalize(issue.getSeverity()),
+                            issue.getType() != null ? issue.getType() : "Code Quality"));
+
+                    sb.append(String.format("**Issue:** %s\n", issue.getTitle()));
+
+                    if (issue.getDescription() != null && !issue.getDescription().isBlank()) {
+                        sb.append(String.format("**Impact:** %s\n", issue.getDescription()));
+                    }
+
+                    if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
+                        sb.append(String.format("**Suggestion:** %s\n", issue.getSuggestion()));
+                    }
+
+                    if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
+                        sb.append(String.format("\n```%s\n%s\n```\n", fr.language, issue.getFixedCode()));
+                    }
+                    sb.append("\n---\n\n");
+                }
+            } else {
+                sb.append(":white_check_mark: No issues found in this file.\n\n");
+            }
+
+            sb.append("</details>\n\n");
         }
 
-        sb.append("\n---\n*Powered by [CodeShield AI](https://codeshield-pro.vercel.app)*");
+        // Final verdict
+        sb.append("---\n\n### :memo: Final Decision\n\n");
+        sb.append(String.format("**Verdict:** %s\n", verdict));
+        if (critical > 0) {
+            sb.append(String.format("**Reason:** %d critical issue(s) must be resolved before merging.\n", critical));
+        } else if (high > 2) {
+            sb.append(String.format("**Reason:** %d high severity issue(s) require attention.\n", high));
+        } else if (totalIssues == 0) {
+            sb.append("**Reason:** Code is clean and follows best practices.\n");
+        } else {
+            sb.append("**Reason:** Minor issues found — safe to merge after review.\n");
+        }
+        sb.append("**Reviewed By:** CodeShield AI — Senior Code Review Engine\n\n");
+        sb.append("---\n*Powered by [CodeShield AI](https://revidex.vercel.app) :shield:*\n");
         return sb.toString();
+    }
+
+    private String severityIcon(String severity) {
+        if (severity == null) return ":yellow_circle:";
+        return switch (severity.toLowerCase()) {
+            case "critical" -> ":red_circle:";
+            case "high" -> ":orange_circle:";
+            case "medium" -> ":yellow_circle:";
+            case "low" -> ":green_circle:";
+            default -> ":blue_circle:";
+        };
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return "";
+        return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
     }
 
     private List<Map<String, Object>> buildInlineComments(List<FileReview> reviews, String commitId) {
@@ -222,25 +305,31 @@ public class PrReviewPipelineService {
             for (ReviewResponse.Issue issue : fr.review.getIssues()) {
                 if (issue.getLine() <= 0) continue;
 
-                String body = String.format("**%s** — %s\n\n%s\n\n**Suggestion:** %s",
-                        issue.getSeverity().toUpperCase(),
-                        issue.getTitle(),
-                        issue.getDescription(),
-                        issue.getSuggestion());
+                String icon = severityIcon(issue.getSeverity());
+                StringBuilder body = new StringBuilder();
+                body.append(String.format("### %s %s — %s\n\n",
+                        icon, capitalize(issue.getSeverity()),
+                        issue.getType() != null ? issue.getType() : "Code Quality"));
+                body.append(String.format("**Issue:** %s\n\n", issue.getTitle()));
 
+                if (issue.getDescription() != null && !issue.getDescription().isBlank()) {
+                    body.append(String.format("**Impact:** %s\n\n", issue.getDescription()));
+                }
+                if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
+                    body.append(String.format("**Suggestion:** %s\n", issue.getSuggestion()));
+                }
                 if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
-                    body += String.format("\n\n```suggestion\n%s\n```", issue.getFixedCode());
+                    body.append(String.format("\n```suggestion\n%s\n```", issue.getFixedCode()));
                 }
 
                 Map<String, Object> comment = new HashMap<>();
                 comment.put("path", fr.filename);
                 comment.put("line", issue.getLine());
-                comment.put("body", body);
+                comment.put("body", body.toString());
                 comments.add(comment);
             }
         }
 
-        // GitHub limits inline comments to 50 per review
         if (comments.size() > 50) {
             return comments.subList(0, 50);
         }
