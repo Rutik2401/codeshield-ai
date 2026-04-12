@@ -1,15 +1,24 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TimeAgoPipe],
   templateUrl: './navbar.component.html',
+  styles: [`
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  `],
 })
 export class NavbarComponent {
   auth = inject(AuthService);
+  notif = inject(NotificationService);
 
   mobileMenuOpen = false;
   showUserMenu = false;
@@ -52,8 +61,23 @@ export class NavbarComponent {
 
   signOut(): void {
     this.auth.signOut();
+    this.notif.stopPolling();
     this.showUserMenu = false;
     this.mobileMenuOpen = false;
     this.router.navigate(['/']);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.notif-panel') && !target.closest('.notif-bell')) {
+      this.notif.closePanel();
+    }
+  }
+
+  constructor() {
+    if (this.auth.isLoggedIn()) {
+      this.notif.startPolling();
+    }
   }
 }

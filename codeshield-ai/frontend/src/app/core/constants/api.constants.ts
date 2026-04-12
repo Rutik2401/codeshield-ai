@@ -3,4 +3,5 @@ export const API_ENDPOINTS = {
   REVIEWS: '/reviews',
   REPOSITORIES: '/repositories',
   PR_REVIEWS: '/repositories/pr-reviews',
+  NOTIFICATIONS: '/notifications',
 } as const;

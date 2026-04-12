@@ -2,6 +2,7 @@ package com.codeshield.service;
 
 import com.codeshield.dto.ReviewResponse;
 import com.codeshield.entity.ConnectedRepository;
+import com.codeshield.entity.Notification;
 import com.codeshield.entity.PrReview;
 import com.codeshield.repository.PrReviewRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +22,7 @@ public class PrReviewPipelineService {
     private final GitHubService gitHubService;
     private final GeminiService geminiService;
     private final PrReviewRepository prReviewRepository;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
     private static final Set<String> REVIEWABLE_EXTENSIONS = Set.of(
@@ -131,10 +133,32 @@ public class PrReviewPipelineService {
 
             log.info("PR review completed for {}#{}: score={}, issues={}", repo.getFullName(), prNumber, avgScore, totalIssues);
 
+            // Notify user
+            UUID userId = repo.getUser().getId();
+            String scoreEmoji = avgScore >= 80 ? "Pass" : avgScore >= 60 ? "Warning" : "Fail";
+            notificationService.createNotification(
+                    userId,
+                    Notification.Type.REVIEW_COMPLETED,
+                    "PR #" + prNumber + " Review Complete — " + scoreEmoji,
+                    "Score: " + avgScore + "/100 | " + filesReviewed + " files | " + totalIssues + " issues (" + critical + " critical)",
+                    "https://github.com/" + repo.getFullName() + "/pull/" + prNumber
+            );
+
         } catch (Exception e) {
             log.error("PR review pipeline failed for {}#{}: {}", repo.getFullName(), prNumber, e.getMessage());
             prReview.setStatus(PrReview.Status.FAILED);
             prReviewRepository.save(prReview);
+
+            // Notify user about failure
+            try {
+                notificationService.createNotification(
+                        repo.getUser().getId(),
+                        Notification.Type.REVIEW_FAILED,
+                        "PR #" + prNumber + " Review Failed",
+                        "Could not complete review for " + repo.getFullName() + ". Please try again.",
+                        "https://github.com/" + repo.getFullName() + "/pull/" + prNumber
+                );
+            } catch (Exception ignored) {}
         }
     }
 
