@@ -30,11 +30,15 @@ public class PrReviewPipelineService {
 
     public void reviewPullRequest(ConnectedRepository repo, int prNumber,
                                    String prTitle, String prAuthor, String headSha) {
-        // Skip if already reviewed this exact commit
-        if (prReviewRepository.existsByRepositoryIdAndPrNumberAndHeadSha(repo.getId(), prNumber, headSha)) {
+        // Skip only if COMPLETED for this exact commit
+        var existing = prReviewRepository.findByRepositoryIdAndPrNumberAndHeadSha(repo.getId(), prNumber, headSha);
+        if (existing.isPresent() && existing.get().getStatus() == PrReview.Status.COMPLETED) {
             log.info("PR {}#{} sha {} already reviewed, skipping", repo.getFullName(), prNumber, headSha);
             return;
         }
+
+        // Delete stuck/failed reviews for this PR+SHA so we can retry
+        existing.ifPresent(prReviewRepository::delete);
 
         PrReview prReview = PrReview.builder()
                 .repository(repo)
@@ -73,6 +77,10 @@ public class PrReviewPipelineService {
                 String language = detectLanguage(filename);
 
                 try {
+                    // Rate limit: wait 4s between files to stay within Gemini free tier (20 req/min)
+                    if (filesReviewed > 0) {
+                        Thread.sleep(4000);
+                    }
                     ReviewResponse review = geminiService.analyzeCode(content, language);
                     filesReviewed++;
                     totalScore += review.getScore();
