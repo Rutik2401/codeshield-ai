@@ -69,6 +69,7 @@ public class PrReviewPipelineService {
             for (JsonNode file : files) {
                 String filename = file.get("filename").asText();
                 String status = file.get("status").asText();
+                String patch = file.has("patch") ? file.get("patch").asText() : "";
 
                 if ("removed".equals(status)) continue;
                 if (!isReviewable(filename)) continue;
@@ -95,7 +96,7 @@ public class PrReviewPipelineService {
                         low += review.getMetrics().getLow();
                     }
 
-                    fileReviews.add(new FileReview(filename, language, review));
+                    fileReviews.add(new FileReview(filename, language, review, patch));
                 } catch (Exception e) {
                     log.warn("Failed to review file {}: {}", filename, e.getMessage());
                 }
@@ -302,8 +303,24 @@ public class PrReviewPipelineService {
         for (FileReview fr : reviews) {
             if (fr.review.getIssues() == null) continue;
 
+            // Build a map of file line -> diff position for this file
+            Map<Integer, Integer> lineToPosition = parseDiffPositions(fr.patch);
+
             for (ReviewResponse.Issue issue : fr.review.getIssues()) {
                 if (issue.getLine() <= 0) continue;
+
+                // Only add comment if the line exists in the diff
+                Integer position = lineToPosition.get(issue.getLine());
+                if (position == null) {
+                    // Try nearby lines (AI might be off by 1-2 lines)
+                    for (int offset = 1; offset <= 3; offset++) {
+                        position = lineToPosition.get(issue.getLine() + offset);
+                        if (position != null) break;
+                        position = lineToPosition.get(issue.getLine() - offset);
+                        if (position != null) break;
+                    }
+                }
+                if (position == null) continue;
 
                 String icon = severityIcon(issue.getSeverity());
                 StringBuilder body = new StringBuilder();
@@ -316,15 +333,15 @@ public class PrReviewPipelineService {
                     body.append(String.format("**Impact:** %s\n\n", issue.getDescription()));
                 }
                 if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
-                    body.append(String.format("**Suggestion:** %s\n", issue.getSuggestion()));
+                    body.append(String.format(":bulb: **Suggestion:** %s\n", issue.getSuggestion()));
                 }
                 if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
-                    body.append(String.format("\n```suggestion\n%s\n```", issue.getFixedCode()));
+                    body.append(String.format("\n**Fix:**\n```%s\n%s\n```", fr.language, issue.getFixedCode()));
                 }
 
                 Map<String, Object> comment = new HashMap<>();
                 comment.put("path", fr.filename);
-                comment.put("line", issue.getLine());
+                comment.put("position", position);
                 comment.put("body", body.toString());
                 comments.add(comment);
             }
@@ -336,5 +353,45 @@ public class PrReviewPipelineService {
         return comments;
     }
 
-    private record FileReview(String filename, String language, ReviewResponse review) {}
+    /**
+     * Parse a unified diff patch to map file line numbers to diff positions.
+     * GitHub requires "position" (line in the diff) not the actual file line number.
+     */
+    private Map<Integer, Integer> parseDiffPositions(String patch) {
+        Map<Integer, Integer> lineToPosition = new HashMap<>();
+        if (patch == null || patch.isBlank()) return lineToPosition;
+
+        String[] lines = patch.split("\n");
+        int position = 0;
+        int fileLine = 0;
+
+        for (String line : lines) {
+            if (line.startsWith("@@")) {
+                // Parse hunk header: @@ -a,b +c,d @@
+                try {
+                    String[] parts = line.split("\\+")[1].split("[, ]");
+                    fileLine = Integer.parseInt(parts[0]) - 1;
+                } catch (Exception e) {
+                    fileLine = 0;
+                }
+                position++;
+                continue;
+            }
+
+            position++;
+            if (line.startsWith("+")) {
+                fileLine++;
+                lineToPosition.put(fileLine, position);
+            } else if (line.startsWith("-")) {
+                // Deleted line — don't increment fileLine
+            } else {
+                fileLine++;
+                lineToPosition.put(fileLine, position);
+            }
+        }
+
+        return lineToPosition;
+    }
+
+    private record FileReview(String filename, String language, ReviewResponse review, String patch) {}
 }
