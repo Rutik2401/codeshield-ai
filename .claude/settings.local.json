@@ -76,10 +76,31 @@
       "WebFetch(domain:codeshield-pro.vercel.app)",
       "WebFetch(domain:codeshield-ai-v8wm.onrender.com)",
       "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" \"https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyACpqpoQYIVbCIjk4C6VpR-qRUsoje60es\")",
-      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyACpqpoQYIVbCIjk4C6VpR-qRUsoje60es\" -H \"Content-Type: application/json\" -d '{\"contents\":[{\"parts\":[{\"text\":\"Say hello\"}]}]}')"
+      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyACpqpoQYIVbCIjk4C6VpR-qRUsoje60es\" -H \"Content-Type: application/json\" -d '{\"contents\":[{\"parts\":[{\"text\":\"Say hello\"}]}]}')",
+      "Bash(where gh:*)",
+      "Bash(taskkill //PID 19652 //F)",
+      "Bash(taskkill //IM java.exe //F)",
+      "Bash(curl -s \"http://localhost:8081/api/v1/health\")",
+      "Bash(curl -s http://localhost:8081/api/v1/repositories -H 'Authorization: Bearer test')",
+      "Bash(curl -s \"http://localhost:8081/api/v1/repositories\" -H \"Authorization: Bearer $\\(curl -s http://localhost:8081/api/v1/repositories -H 'Authorization: Bearer test' 2>&1)",
+      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" \"http://localhost:8081/api/v1/health\")",
+      "Bash(npm list:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel rm:*)",
+      "Bash(vercel project:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel --prod --yes)",
+      "Bash(export PATH=\"$PATH:/c/Users/rutik/.fly/bin\")",
+      "Bash(flyctl launch:*)",
+      "Bash(flyctl apps:*)",
+      "Bash(ls d:/AI/codeshield-ai/tree-sitter-service/node_modules/web-tree-sitter/*.wasm)",
+      "Bash(node -e \"const P = require\\('web-tree-sitter'\\); console.log\\(typeof P, Object.keys\\(P\\)\\)\")",
+      "Read(//d/Test/**)",
+      "Bash(mkdir -p d:/Test)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\rutik\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.21.2"
+      "C:\\Users\\rutik\\.m2\\repository\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.21.2",
+      "d:\\Test"
     ]
   }
 }

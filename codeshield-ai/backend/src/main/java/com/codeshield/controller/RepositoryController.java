@@ -249,6 +249,18 @@ public class RepositoryController {
         List<Map<String, Object>> result = new ArrayList<>();
         for (JsonNode pr : prs) {
             int prNumber = pr.get("number").asInt();
+
+            // Fetch individual PR to get additions/deletions/changed_files
+            int additions = 0, deletions = 0, changedFiles = 0;
+            try {
+                JsonNode prDetail = gitHubService.getPullRequest(token, repo.getOwner(), repo.getName(), prNumber);
+                additions = prDetail.has("additions") ? prDetail.get("additions").asInt() : 0;
+                deletions = prDetail.has("deletions") ? prDetail.get("deletions").asInt() : 0;
+                changedFiles = prDetail.has("changed_files") ? prDetail.get("changed_files").asInt() : 0;
+            } catch (Exception e) {
+                log.debug("Could not fetch PR #{} details: {}", prNumber, e.getMessage());
+            }
+
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("number", prNumber);
             item.put("title", pr.get("title").asText());
@@ -261,9 +273,9 @@ public class RepositoryController {
             item.put("updatedAt", pr.get("updated_at").asText());
             item.put("draft", pr.get("draft").asBoolean());
             item.put("reviewed", reviewedPrNumbers.contains(prNumber));
-            item.put("additions", pr.has("additions") ? pr.get("additions").asInt() : 0);
-            item.put("deletions", pr.has("deletions") ? pr.get("deletions").asInt() : 0);
-            item.put("changedFiles", pr.has("changed_files") ? pr.get("changed_files").asInt() : 0);
+            item.put("additions", additions);
+            item.put("deletions", deletions);
+            item.put("changedFiles", changedFiles);
             result.add(item);
         }
         return ResponseEntity.ok(result);
