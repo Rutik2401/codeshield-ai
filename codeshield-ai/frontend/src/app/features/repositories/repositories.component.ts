@@ -14,17 +14,33 @@ export class RepositoriesComponent {
   repoService = inject(RepositoryService);
   auth = inject(AuthService);
 
-  activeTab = signal<'connected' | 'browse'>('connected');
+  activeTab = signal<'connected' | 'browse' | 'open-prs'>('connected');
+  selectedRepoId = signal<string | null>(null);
+  selectedRepoName = signal<string>('');
   hasGitHub = computed(() => !!this.auth.getGitHubToken());
 
   constructor() {
     this.repoService.fetchConnectedRepos();
   }
 
-  switchTab(tab: 'connected' | 'browse'): void {
+  switchTab(tab: 'connected' | 'browse' | 'open-prs'): void {
     this.activeTab.set(tab);
     if (tab === 'browse' && this.repoService.githubRepos().length === 0) {
       this.repoService.fetchGitHubRepos();
+    }
+  }
+
+  showOpenPrs(repo: { id: string; fullName: string }): void {
+    this.selectedRepoId.set(repo.id);
+    this.selectedRepoName.set(repo.fullName);
+    this.activeTab.set('open-prs');
+    this.repoService.fetchOpenPrs(repo.id);
+  }
+
+  reviewOpenPr(prNumber: number): void {
+    const repoId = this.selectedRepoId();
+    if (repoId) {
+      this.repoService.triggerPrReview(repoId, prNumber);
     }
   }
 

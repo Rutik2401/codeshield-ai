@@ -29,6 +29,23 @@ export interface GitHubRepo {
   connected: boolean;
 }
 
+export interface OpenPr {
+  number: number;
+  title: string;
+  author: string;
+  authorAvatar: string;
+  headSha: string;
+  branch: string;
+  baseBranch: string;
+  createdAt: string;
+  updatedAt: string;
+  draft: boolean;
+  reviewed: boolean;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+}
+
 export interface PrReview {
   id: string;
   repositoryFullName: string;
@@ -138,6 +155,15 @@ export class RepositoryService {
   fetchRepoPrReviews(repoId: string): void {
     this.http.get<PrReview[]>(`${this.apiUrl}/${repoId}/pr-reviews`).subscribe({
       next: (reviews) => this.prReviews.set(reviews),
+    });
+  }
+
+  openPrs = signal<OpenPr[]>([]);
+
+  fetchOpenPrs(repoId: string): void {
+    this.http.get<OpenPr[]>(`${this.apiUrl}/${repoId}/open-prs`).subscribe({
+      next: (prs) => this.openPrs.set(prs),
+      error: () => this.openPrs.set([]),
     });
   }
 

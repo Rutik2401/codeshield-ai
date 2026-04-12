@@ -57,6 +57,10 @@ public class PrReviewPipelineService {
             String owner = repo.getOwner();
             String repoName = repo.getName();
 
+            // 0. Set pending commit status
+            gitHubService.createCommitStatus(token, owner, repoName, headSha,
+                    "pending", "CodeShield AI review in progress...", null);
+
             // 1. Get changed files
             List<JsonNode> files = gitHubService.getPullRequestFiles(token, owner, repoName, prNumber);
             log.info("PR #{} has {} changed files", prNumber, files.size());
@@ -132,6 +136,37 @@ public class PrReviewPipelineService {
             ));
             prReviewRepository.save(prReview);
 
+            // 5. Set commit status (pass/fail badge on PR)
+            String prUrl = "https://github.com/" + repo.getFullName() + "/pull/" + prNumber;
+            if (critical > 0) {
+                gitHubService.createCommitStatus(token, owner, repoName, headSha,
+                        "failure",
+                        String.format("Score: %d/100 — %d critical issue(s) found", avgScore, critical),
+                        prUrl);
+            } else if (totalIssues == 0) {
+                gitHubService.createCommitStatus(token, owner, repoName, headSha,
+                        "success", "Score: " + avgScore + "/100 — No issues found", prUrl);
+            } else {
+                gitHubService.createCommitStatus(token, owner, repoName, headSha,
+                        "success",
+                        String.format("Score: %d/100 — %d issue(s), no critical", avgScore, totalIssues),
+                        prUrl);
+            }
+
+            // 6. Auto-label the PR
+            List<String> labels = new ArrayList<>();
+            labels.add("codeshield-reviewed");
+            if (critical > 0) {
+                labels.add("security-critical");
+            } else if (high > 0) {
+                labels.add("security-high");
+            } else if (totalIssues > 0) {
+                labels.add("needs-review");
+            } else {
+                labels.add("codeshield-clean");
+            }
+            gitHubService.addLabels(token, owner, repoName, prNumber, labels);
+
             log.info("PR review completed for {}#{}: score={}, issues={}", repo.getFullName(), prNumber, avgScore, totalIssues);
 
             // Notify user
@@ -149,6 +184,12 @@ public class PrReviewPipelineService {
             log.error("PR review pipeline failed for {}#{}: {}", repo.getFullName(), prNumber, e.getMessage());
             prReview.setStatus(PrReview.Status.FAILED);
             prReviewRepository.save(prReview);
+
+            // Set error commit status
+            try {
+                gitHubService.createCommitStatus(repo.getGithubAccessToken(), repo.getOwner(), repo.getName(),
+                        headSha, "error", "CodeShield AI review failed", null);
+            } catch (Exception ignored) {}
 
             // Notify user about failure
             try {

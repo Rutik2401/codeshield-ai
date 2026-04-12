@@ -223,6 +223,118 @@ public class GitHubService {
         }
     }
 
+    // ═══ Commit Status ═══
+
+    public void createCommitStatus(String accessToken, String owner, String repo, String sha,
+                                    String state, String description, String targetUrl) {
+        try {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("state", state); // "success", "failure", "pending", "error"
+            body.put("description", description);
+            body.put("context", "CodeShield AI");
+            if (targetUrl != null) {
+                body.put("target_url", targetUrl);
+            }
+
+            githubApi.post()
+                    .uri("/repos/{owner}/{repo}/statuses/{sha}", owner, repo, sha)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            log.info("Commit status '{}' set for {}/{}@{}", state, owner, repo, sha.substring(0, 7));
+        } catch (Exception e) {
+            log.warn("Failed to set commit status: {}", e.getMessage());
+        }
+    }
+
+    // ═══ Labels ═══
+
+    public void addLabels(String accessToken, String owner, String repo, int issueNumber, List<String> labels) {
+        try {
+            // Ensure labels exist (create if not)
+            for (String label : labels) {
+                ensureLabelExists(accessToken, owner, repo, label);
+            }
+
+            githubApi.post()
+                    .uri("/repos/{owner}/{repo}/issues/{issue}/labels", owner, repo, issueNumber)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of("labels", labels))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            log.info("Labels {} added to {}/{}#{}", labels, owner, repo, issueNumber);
+        } catch (Exception e) {
+            log.warn("Failed to add labels: {}", e.getMessage());
+        }
+    }
+
+    private void ensureLabelExists(String accessToken, String owner, String repo, String labelName) {
+        try {
+            githubApi.get()
+                    .uri("/repos/{owner}/{repo}/labels/{name}", owner, repo, labelName)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (WebClientResponseException.NotFound e) {
+            // Create the label
+            String color = switch (labelName) {
+                case "security-critical" -> "d73a4a";
+                case "security-high" -> "e99695";
+                case "needs-review" -> "fbca04";
+                case "codeshield-clean" -> "0e8a16";
+                case "codeshield-reviewed" -> "1d76db";
+                default -> "ededed";
+            };
+            try {
+                githubApi.post()
+                        .uri("/repos/{owner}/{repo}/labels", owner, repo)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("name", labelName, "color", color))
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+            } catch (Exception createEx) {
+                log.debug("Label '{}' may already exist: {}", labelName, createEx.getMessage());
+            }
+        } catch (Exception e) {
+            // Ignore — label check failed but we'll try adding anyway
+        }
+    }
+
+    // ═══ List Open PRs ═══
+
+    public List<JsonNode> listOpenPullRequests(String accessToken, String owner, String repo) {
+        try {
+            String response = githubApi.get()
+                    .uri(uri -> uri.path("/repos/{owner}/{repo}/pulls")
+                            .queryParam("state", "open")
+                            .queryParam("sort", "updated")
+                            .queryParam("direction", "desc")
+                            .queryParam("per_page", 30)
+                            .build(owner, repo))
+                    .header("Authorization", "Bearer " + accessToken)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            JsonNode prs = objectMapper.readTree(response);
+            List<JsonNode> result = new ArrayList<>();
+            prs.forEach(result::add);
+            return result;
+        } catch (Exception e) {
+            log.warn("Failed to list open PRs for {}/{}: {}", owner, repo, e.getMessage());
+            return List.of();
+        }
+    }
+
     // ═══ Post Review ═══
 
     public Long createPullRequestReview(String accessToken, String owner, String repo, int prNumber,
