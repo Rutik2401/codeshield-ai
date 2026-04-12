@@ -303,16 +303,16 @@ public class PrReviewPipelineService {
         for (FileReview fr : reviews) {
             if (fr.review.getIssues() == null) continue;
 
-            // Build a map of file line -> diff position for this file
             Map<Integer, Integer> lineToPosition = parseDiffPositions(fr.patch);
+
+            // Group issues by resolved diff position (line-wise)
+            Map<Integer, List<ReviewResponse.Issue>> issuesByPosition = new LinkedHashMap<>();
 
             for (ReviewResponse.Issue issue : fr.review.getIssues()) {
                 if (issue.getLine() <= 0) continue;
 
-                // Only add comment if the line exists in the diff
                 Integer position = lineToPosition.get(issue.getLine());
                 if (position == null) {
-                    // Try nearby lines (AI might be off by 1-2 lines)
                     for (int offset = 1; offset <= 3; offset++) {
                         position = lineToPosition.get(issue.getLine() + offset);
                         if (position != null) break;
@@ -322,27 +322,45 @@ public class PrReviewPipelineService {
                 }
                 if (position == null) continue;
 
-                String icon = severityIcon(issue.getSeverity());
-                StringBuilder body = new StringBuilder();
-                body.append(String.format("### %s %s — %s\n\n",
-                        icon, capitalize(issue.getSeverity()),
-                        issue.getType() != null ? issue.getType() : "Code Quality"));
-                body.append(String.format("**Issue:** %s\n\n", issue.getTitle()));
+                issuesByPosition.computeIfAbsent(position, k -> new ArrayList<>()).add(issue);
+            }
 
-                if (issue.getDescription() != null && !issue.getDescription().isBlank()) {
-                    body.append(String.format("**Impact:** %s\n\n", issue.getDescription()));
-                }
-                if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
-                    body.append(String.format(":bulb: **Suggestion:** %s\n", issue.getSuggestion()));
-                }
-                if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
-                    body.append(String.format("\n**Fix:**\n```%s\n%s\n```", fr.language, issue.getFixedCode()));
+            // Build one comment per line with all issues grouped
+            for (Map.Entry<Integer, List<ReviewResponse.Issue>> entry : issuesByPosition.entrySet()) {
+                int position = entry.getKey();
+                List<ReviewResponse.Issue> lineIssues = entry.getValue();
+
+                StringBuilder body = new StringBuilder();
+
+                for (int i = 0; i < lineIssues.size(); i++) {
+                    ReviewResponse.Issue issue = lineIssues.get(i);
+                    String severity = issue.getSeverity() != null ? issue.getSeverity().toUpperCase() : "MEDIUM";
+                    String tag = severityTag(severity);
+
+                    body.append(String.format("%s **%s**", tag, issue.getTitle()));
+                    body.append("\n\n");
+
+                    if (issue.getDescription() != null && !issue.getDescription().isBlank()) {
+                        body.append(issue.getDescription()).append("\n\n");
+                    }
+
+                    if (issue.getSuggestion() != null && !issue.getSuggestion().isBlank()) {
+                        body.append("> ").append(issue.getSuggestion()).append("\n");
+                    }
+
+                    if (issue.getFixedCode() != null && !issue.getFixedCode().isBlank()) {
+                        body.append(String.format("\n```suggestion\n%s\n```", issue.getFixedCode()));
+                    }
+
+                    if (i < lineIssues.size() - 1) {
+                        body.append("\n\n---\n\n");
+                    }
                 }
 
                 Map<String, Object> comment = new HashMap<>();
                 comment.put("path", fr.filename);
                 comment.put("position", position);
-                comment.put("body", body.toString());
+                comment.put("body", body.toString().trim());
                 comments.add(comment);
             }
         }
@@ -351,6 +369,16 @@ public class PrReviewPipelineService {
             return comments.subList(0, 50);
         }
         return comments;
+    }
+
+    private String severityTag(String severity) {
+        return switch (severity) {
+            case "CRITICAL" -> ":red_circle: `CRITICAL`";
+            case "HIGH" -> ":orange_circle: `HIGH`";
+            case "MEDIUM" -> ":yellow_circle: `MEDIUM`";
+            case "LOW" -> ":large_blue_circle: `LOW`";
+            default -> ":yellow_circle: `" + severity + "`";
+        };
     }
 
     /**

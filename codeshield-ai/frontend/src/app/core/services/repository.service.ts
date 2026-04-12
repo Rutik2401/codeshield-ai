@@ -142,10 +142,26 @@ export class RepositoryService {
   }
 
   reviewMessage = signal<string | null>(null);
+  reviewError = signal(false);
 
   triggerPrReview(repoId: string, prNumber: number): void {
     this.reviewMessage.set(`Review started for PR #${prNumber}...`);
-    setTimeout(() => this.reviewMessage.set(null), 4000);
-    this.http.post<any>(`${this.apiUrl}/${repoId}/review-pr/${prNumber}`, {}).subscribe();
+    this.reviewError.set(false);
+    this.http.post<any>(`${this.apiUrl}/${repoId}/review-pr/${prNumber}`, {}).subscribe({
+      next: () => {
+        setTimeout(() => this.reviewMessage.set(null), 4000);
+      },
+      error: (err) => {
+        const msg = err.status === 404 || err.error?.message?.includes('404')
+          ? `PR #${prNumber} not found. Check the PR number and try again.`
+          : err.error?.message || `Failed to review PR #${prNumber}`;
+        this.reviewMessage.set(msg);
+        this.reviewError.set(true);
+        setTimeout(() => {
+          this.reviewMessage.set(null);
+          this.reviewError.set(false);
+        }, 5000);
+      },
+    });
   }
 }
