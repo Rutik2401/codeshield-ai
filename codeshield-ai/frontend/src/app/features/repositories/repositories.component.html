@@ -156,5 +156,14 @@
         </div>
       }
     }
+
+    <!-- Review triggered toast -->
+    @if (repoService.reviewMessage()) {
+      <div class="fixed bottom-6 right-6 z-[300] rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl"
+           style="background: var(--bg-surface); border: 1px solid var(--border-default);">
+        <div class="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style="border-color: var(--color-primary); border-top-color: transparent;"></div>
+        <span class="text-sm font-medium" style="color: var(--text-primary);">{{ repoService.reviewMessage() }}</span>
+      </div>
+    }
   </div>
 </div>

@@ -141,7 +141,11 @@ export class RepositoryService {
     });
   }
 
+  reviewMessage = signal<string | null>(null);
+
   triggerPrReview(repoId: string, prNumber: number): void {
+    this.reviewMessage.set(`Review started for PR #${prNumber}...`);
+    setTimeout(() => this.reviewMessage.set(null), 4000);
     this.http.post<any>(`${this.apiUrl}/${repoId}/review-pr/${prNumber}`, {}).subscribe();
   }
 }
