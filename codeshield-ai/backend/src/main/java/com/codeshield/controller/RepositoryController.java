@@ -228,6 +228,47 @@ public class RepositoryController {
         return ResponseEntity.ok(Map.of("message", "Review started for PR #" + prNumber));
     }
 
+    // ═══ List open PRs for a connected repo ═══
+
+    @GetMapping("/{id}/open-prs")
+    public ResponseEntity<List<Map<String, Object>>> listOpenPrs(@PathVariable UUID id) {
+        UUID userId = requireUserId();
+        ConnectedRepository repo = repoRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new RuntimeException("Repository not found"));
+
+        String token = repo.getGithubAccessToken();
+        List<JsonNode> prs = gitHubService.listOpenPullRequests(token, repo.getOwner(), repo.getName());
+
+        // Check which PRs already have reviews
+        Set<Integer> reviewedPrNumbers = prReviewRepository.findByRepositoryIdOrderByCreatedAtDesc(repo.getId())
+                .stream()
+                .filter(r -> r.getStatus() == PrReview.Status.COMPLETED)
+                .map(PrReview::getPrNumber)
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (JsonNode pr : prs) {
+            int prNumber = pr.get("number").asInt();
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("number", prNumber);
+            item.put("title", pr.get("title").asText());
+            item.put("author", pr.get("user").get("login").asText());
+            item.put("authorAvatar", pr.get("user").get("avatar_url").asText());
+            item.put("headSha", pr.get("head").get("sha").asText());
+            item.put("branch", pr.get("head").get("ref").asText());
+            item.put("baseBranch", pr.get("base").get("ref").asText());
+            item.put("createdAt", pr.get("created_at").asText());
+            item.put("updatedAt", pr.get("updated_at").asText());
+            item.put("draft", pr.get("draft").asBoolean());
+            item.put("reviewed", reviewedPrNumbers.contains(prNumber));
+            item.put("additions", pr.has("additions") ? pr.get("additions").asInt() : 0);
+            item.put("deletions", pr.has("deletions") ? pr.get("deletions").asInt() : 0);
+            item.put("changedFiles", pr.has("changed_files") ? pr.get("changed_files").asInt() : 0);
+            result.add(item);
+        }
+        return ResponseEntity.ok(result);
+    }
+
     // ═══ Helpers ═══
 
     private ConnectedRepoResponse toResponse(ConnectedRepository repo) {
