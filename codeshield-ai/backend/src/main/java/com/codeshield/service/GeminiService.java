@@ -1,6 +1,7 @@
 package com.codeshield.service;
 
-import com.codeshield.dto.ReviewResponse;
+import com.codeshield.dto.*;
+import com.codeshield.model.CodeChunk;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,7 +70,7 @@ public class GeminiService {
     }
 
     public ReviewResponse analyzeCode(String code, String language) {
-        List<CodeChunkService.CodeChunk> chunks = chunkService.chunkCode(code, language);
+        List<CodeChunk> chunks = chunkService.chunkCode(code, language);
 
         if (chunks.size() == 1) {
             String prompt = promptService.buildReviewPrompt(code, language);
@@ -233,13 +234,13 @@ public class GeminiService {
     private ReviewResponse mergeResults(List<ReviewResponse> results) {
         ReviewResponse merged = new ReviewResponse();
 
-        List<ReviewResponse.Issue> allIssues = new ArrayList<>();
+        List<Issue> allIssues = new ArrayList<>();
         Set<String> seenTitles = new HashSet<>();
         int issueCounter = 1;
 
         for (ReviewResponse result : results) {
             if (result.getIssues() != null) {
-                for (ReviewResponse.Issue issue : result.getIssues()) {
+                for (Issue issue : result.getIssues()) {
                     if (seenTitles.add(issue.getTitle())) {
                         issue.setId("ISS-" + String.format("%03d", issueCounter++));
                         allIssues.add(issue);
@@ -249,17 +250,17 @@ public class GeminiService {
         }
         merged.setIssues(allIssues);
 
-        ReviewResponse.SecurityAudit mergedAudit = new ReviewResponse.SecurityAudit();
-        List<ReviewResponse.Vulnerability> allVulns = new ArrayList<>();
+        SecurityAudit mergedAudit = new SecurityAudit();
+        List<Vulnerability> allVulns = new ArrayList<>();
         Set<String> seenOwasp = new HashSet<>();
         Set<String> allRecs = new LinkedHashSet<>();
         String worstRisk = "safe";
 
         for (ReviewResponse result : results) {
             if (result.getSecurityAudit() != null) {
-                ReviewResponse.SecurityAudit audit = result.getSecurityAudit();
+                SecurityAudit audit = result.getSecurityAudit();
                 if (audit.getVulnerabilities() != null) {
-                    for (ReviewResponse.Vulnerability vuln : audit.getVulnerabilities()) {
+                    for (Vulnerability vuln : audit.getVulnerabilities()) {
                         if (seenOwasp.add(vuln.getOwasp())) allVulns.add(vuln);
                     }
                 }
@@ -272,9 +273,9 @@ public class GeminiService {
         mergedAudit.setRiskLevel(worstRisk);
         merged.setSecurityAudit(mergedAudit);
 
-        ReviewResponse.Metrics mergedMetrics = new ReviewResponse.Metrics();
+        Metrics mergedMetrics = new Metrics();
         int critical = 0, high = 0, medium = 0, low = 0;
-        for (ReviewResponse.Issue issue : allIssues) {
+        for (Issue issue : allIssues) {
             switch (issue.getSeverity()) {
                 case "critical" -> critical++;
                 case "high" -> high++;

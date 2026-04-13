@@ -1,0 +1,11 @@
+@if (loader.isLoading()) {
+  <div class="fixed inset-0 z-[999] flex items-start justify-center pointer-events-none">
+    <!-- Top progress bar -->
+    <div class="absolute top-0 left-0 w-full h-[3px] overflow-hidden">
+      <div class="loader-bar h-full w-full rounded-full"
+           style="background: linear-gradient(90deg, transparent, var(--color-primary), #6366F1, var(--color-primary), transparent);
+                  background-size: 200% 100%;">
+      </div>
+    </div>
+  </div>
+}

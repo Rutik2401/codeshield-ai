@@ -1,8 +1,6 @@
 package com.codeshield.service;
 
-import com.codeshield.dto.AuthResponse;
-import com.codeshield.dto.SignInRequest;
-import com.codeshield.dto.SignUpRequest;
+import com.codeshield.dto.*;
 import com.codeshield.entity.User;
 import com.codeshield.repository.UserRepository;
 import com.codeshield.security.JwtService;
@@ -60,7 +58,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(jwtService.generateToken(user))
                 .refreshToken(jwtService.generateRefreshToken(user))
-                .user(AuthResponse.UserInfo.builder()
+                .user(UserInfo.builder()
                         .id(user.getId().toString())
                         .name(user.getName())
                         .email(user.getEmail())

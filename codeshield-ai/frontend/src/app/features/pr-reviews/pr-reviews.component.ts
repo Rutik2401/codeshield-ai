@@ -2,11 +2,12 @@ import { Component, inject, computed } from '@angular/core';
 import { RepositoryService } from '../../core/services/repository.service';
 import { ScoreCircleComponent } from '../../shared/components/score-circle/score-circle.component';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
+import { ScrollAnimateDirective } from '../../shared/directives/scroll-animate.directive';
 
 @Component({
   selector: 'app-pr-reviews',
   standalone: true,
-  imports: [ScoreCircleComponent, TimeAgoPipe],
+  imports: [ScoreCircleComponent, TimeAgoPipe, ScrollAnimateDirective],
   templateUrl: './pr-reviews.component.html',
 })
 export class PrReviewsComponent {

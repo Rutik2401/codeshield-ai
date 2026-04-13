@@ -2,22 +2,22 @@
   <div class="max-w-5xl mx-auto">
 
     <!-- Header -->
-    <div class="mb-6 sm:mb-8">
+    <div class="mb-6 sm:mb-8" appScrollAnimate="fade">
       <h1 class="text-xl sm:text-2xl font-bold mb-1 sm:mb-2" style="color: var(--text-primary);">PR Reviews</h1>
       <p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Automated code reviews on your pull requests</p>
     </div>
 
     <!-- Stats cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6 sm:mb-8">
-      <div class="rounded-xl p-3 sm:p-4" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6 sm:mb-8 stagger-list">
+      <div appScrollAnimate="scale" class="rounded-xl p-3 sm:p-4" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
         <div class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">{{ stats().total }}</div>
         <div class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Total Reviews</div>
       </div>
-      <div class="rounded-xl p-3 sm:p-4" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
+      <div appScrollAnimate="scale" class="rounded-xl p-3 sm:p-4" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
         <div class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">{{ stats().avgScore }}</div>
         <div class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Avg Score</div>
       </div>
-      <div class="rounded-xl p-3 sm:p-4" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
+      <div appScrollAnimate="scale" class="rounded-xl p-3 sm:p-4" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
         <div class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">{{ stats().totalIssues }}</div>
         <div class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Issues Found</div>
       </div>
@@ -40,9 +40,9 @@
         <p class="text-xs sm:text-sm" style="color: var(--text-secondary);">No PR reviews yet. Connect a repository and open a pull request to get started.</p>
       </div>
     } @else {
-      <div class="grid gap-2 sm:gap-3">
+      <div class="grid gap-2 sm:gap-3 stagger-list">
         @for (review of repoService.prReviews(); track review.id) {
-          <div class="rounded-xl p-3 sm:p-5 transition-all" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
+          <div appScrollAnimate="slide-up" class="rounded-xl p-3 sm:p-5 transition-all" style="background: var(--bg-surface); border: 1px solid var(--border-default);">
             <!-- Mobile: stacked layout, Desktop: row layout -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div class="flex-1 min-w-0">

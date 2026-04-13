@@ -1,6 +1,6 @@
 package com.codeshield.service;
 
-import com.codeshield.dto.ReviewResponse;
+import com.codeshield.dto.*;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.Rectangle;
@@ -145,7 +145,7 @@ public class PdfExportService {
 
     // ── Metrics Bar ──
 
-    private void buildMetrics(Document doc, ReviewResponse.Metrics m) throws DocumentException {
+    private void buildMetrics(Document doc, Metrics m) throws DocumentException {
         if (m == null) return;
 
         PdfPTable table = new PdfPTable(4);
@@ -181,7 +181,7 @@ public class PdfExportService {
 
     // ── Issues Section ──
 
-    private void buildIssues(Document doc, List<ReviewResponse.Issue> issues) throws DocumentException {
+    private void buildIssues(Document doc, List<Issue> issues) throws DocumentException {
         if (issues == null || issues.isEmpty()) return;
 
         sectionHeader(doc, "Issues", String.valueOf(issues.size()));
@@ -191,7 +191,7 @@ public class PdfExportService {
         }
     }
 
-    private void buildIssueCard(Document doc, ReviewResponse.Issue issue, int idx) throws DocumentException {
+    private void buildIssueCard(Document doc, Issue issue, int idx) throws DocumentException {
         Color sc = sevColor(issue.getSeverity());
 
         // Card wrapper
@@ -378,7 +378,7 @@ public class PdfExportService {
 
     // ── Security Audit ──
 
-    private void buildSecurityAudit(Document doc, ReviewResponse.SecurityAudit audit) throws DocumentException {
+    private void buildSecurityAudit(Document doc, SecurityAudit audit) throws DocumentException {
         if (audit == null) return;
 
         sectionHeader(doc, "Security Audit", null);
@@ -403,14 +403,14 @@ public class PdfExportService {
         }
 
         // Vulnerabilities
-        List<ReviewResponse.Vulnerability> vulns = audit.getVulnerabilities();
+        List<Vulnerability> vulns = audit.getVulnerabilities();
         if (vulns != null && !vulns.isEmpty()) {
             Paragraph vulnH = new Paragraph("Vulnerabilities",
                     new Font(Font.HELVETICA, 13, Font.BOLD, DARK));
             vulnH.setSpacingAfter(10);
             doc.add(vulnH);
 
-            for (ReviewResponse.Vulnerability v : vulns) {
+            for (Vulnerability v : vulns) {
                 PdfPTable vCard = new PdfPTable(1);
                 vCard.setWidthPercentage(100);
                 vCard.setSpacingAfter(8);

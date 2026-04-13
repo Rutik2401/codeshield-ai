@@ -1,6 +1,7 @@
 package com.codeshield.controller;
 
 import com.codeshield.dto.AuthResponse;
+import com.codeshield.dto.UserInfo;
 import com.codeshield.entity.User;
 import com.codeshield.repository.UserRepository;
 import com.codeshield.security.JwtService;
@@ -105,7 +106,7 @@ public class OAuth2Controller {
             AuthResponse response = AuthResponse.builder()
                     .token(jwtService.generateToken(user))
                     .refreshToken(jwtService.generateRefreshToken(user))
-                    .user(AuthResponse.UserInfo.builder()
+                    .user(UserInfo.builder()
                             .id(user.getId().toString())
                             .name(user.getName())
                             .email(user.getEmail())
@@ -153,7 +154,7 @@ public class OAuth2Controller {
             AuthResponse response = AuthResponse.builder()
                     .token(jwtService.generateToken(user))
                     .refreshToken(jwtService.generateRefreshToken(user))
-                    .user(AuthResponse.UserInfo.builder()
+                    .user(UserInfo.builder()
                             .id(user.getId().toString())
                             .name(user.getName())
                             .email(user.getEmail())

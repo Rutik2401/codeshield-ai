@@ -2,7 +2,7 @@
   <div class="max-w-5xl mx-auto">
 
     <!-- Header -->
-    <div class="mb-6 sm:mb-8">
+    <div class="mb-6 sm:mb-8" appScrollAnimate="fade">
       <h1 class="text-xl sm:text-2xl font-bold mb-1 sm:mb-2" style="color: var(--text-primary);">Repositories</h1>
       <p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Connect your GitHub repositories for automatic PR reviews</p>
     </div>
@@ -62,9 +62,9 @@
             </button>
           </div>
         } @else {
-          <div class="grid gap-2 sm:gap-3">
+          <div class="grid gap-2 sm:gap-3 stagger-list">
             @for (repo of repoService.connectedRepos(); track repo.id) {
-              <div class="rounded-xl p-3 sm:p-5 transition-all"
+              <div appScrollAnimate="slide-up" class="rounded-xl p-3 sm:p-5 transition-all"
                    style="background: var(--bg-surface); border: 1px solid var(--border-default);">
                 <!-- Mobile: stacked, Desktop: row -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -153,9 +153,9 @@
             <p class="text-xs sm:text-sm" style="color: var(--text-secondary);">No open pull requests in this repository.</p>
           </div>
         } @else {
-          <div class="grid gap-2 sm:gap-3">
+          <div class="grid gap-2 sm:gap-3 stagger-list">
             @for (pr of repoService.openPrs(); track pr.number) {
-              <div class="rounded-xl p-3 sm:p-5 transition-all"
+              <div appScrollAnimate="slide-up" class="rounded-xl p-3 sm:p-5 transition-all"
                    style="background: var(--bg-surface); border: 1px solid var(--border-default);">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                   <div class="flex-1 min-w-0">
@@ -205,9 +205,9 @@
         }
       } @else {
         <!-- Browse GitHub repos -->
-        <div class="grid gap-2 sm:gap-3">
+        <div class="grid gap-2 sm:gap-3 stagger-list">
           @for (repo of repoService.githubRepos(); track repo.id) {
-            <div class="rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all"
+            <div appScrollAnimate="slide-up" class="rounded-xl p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all"
                  style="background: var(--bg-surface); border: 1px solid var(--border-default);">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">

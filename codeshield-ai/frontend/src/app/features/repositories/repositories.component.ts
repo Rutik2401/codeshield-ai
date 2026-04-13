@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { RepositoryService, ConnectedRepo, GitHubRepo } from '../../core/services/repository.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
+import { ScrollAnimateDirective } from '../../shared/directives/scroll-animate.directive';
 
 @Component({
   selector: 'app-repositories',
   standalone: true,
-  imports: [RouterLink, TimeAgoPipe],
+  imports: [RouterLink, TimeAgoPipe, ScrollAnimateDirective],
   templateUrl: './repositories.component.html',
 })
 export class RepositoriesComponent {

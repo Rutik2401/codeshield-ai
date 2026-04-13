@@ -1,6 +1,6 @@
 package com.codeshield.service;
 
-import com.codeshield.dto.ReviewResponse;
+import com.codeshield.dto.*;
 import com.codeshield.entity.ConnectedRepository;
 import com.codeshield.entity.Notification;
 import com.codeshield.entity.PrReview;
@@ -263,7 +263,7 @@ public class PrReviewPipelineService {
         sb.append("---\n\n### :file_folder: File-wise Review\n\n");
 
         for (FileReview fr : reviews) {
-            List<ReviewResponse.Issue> issues = fr.review.getIssues();
+            List<Issue> issues = fr.review.getIssues();
             int issueCount = issues != null ? issues.size() : 0;
             String fileIcon = issueCount == 0 ? ":white_check_mark:" : ":warning:";
 
@@ -275,7 +275,7 @@ public class PrReviewPipelineService {
             }
 
             if (issues != null && !issues.isEmpty()) {
-                for (ReviewResponse.Issue issue : issues) {
+                for (Issue issue : issues) {
                     String icon = severityIcon(issue.getSeverity());
                     String lineRef = issue.getLine() > 0 ? "Line " + issue.getLine() : "General";
 
@@ -347,9 +347,9 @@ public class PrReviewPipelineService {
             Map<Integer, Integer> lineToPosition = parseDiffPositions(fr.patch);
 
             // Group issues by resolved diff position (line-wise)
-            Map<Integer, List<ReviewResponse.Issue>> issuesByPosition = new LinkedHashMap<>();
+            Map<Integer, List<Issue>> issuesByPosition = new LinkedHashMap<>();
 
-            for (ReviewResponse.Issue issue : fr.review.getIssues()) {
+            for (Issue issue : fr.review.getIssues()) {
                 if (issue.getLine() <= 0) continue;
 
                 Integer position = lineToPosition.get(issue.getLine());
@@ -367,14 +367,14 @@ public class PrReviewPipelineService {
             }
 
             // Build one comment per line with all issues grouped
-            for (Map.Entry<Integer, List<ReviewResponse.Issue>> entry : issuesByPosition.entrySet()) {
+            for (Map.Entry<Integer, List<Issue>> entry : issuesByPosition.entrySet()) {
                 int position = entry.getKey();
-                List<ReviewResponse.Issue> lineIssues = entry.getValue();
+                List<Issue> lineIssues = entry.getValue();
 
                 StringBuilder body = new StringBuilder();
 
                 for (int i = 0; i < lineIssues.size(); i++) {
-                    ReviewResponse.Issue issue = lineIssues.get(i);
+                    Issue issue = lineIssues.get(i);
                     String severity = issue.getSeverity() != null ? issue.getSeverity().toUpperCase() : "MEDIUM";
                     String tag = severityTag(severity);
 

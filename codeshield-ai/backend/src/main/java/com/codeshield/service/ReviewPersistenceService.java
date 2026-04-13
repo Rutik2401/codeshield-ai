@@ -1,7 +1,6 @@
 package com.codeshield.service;
 
-import com.codeshield.dto.ReviewHistoryItem;
-import com.codeshield.dto.ReviewResponse;
+import com.codeshield.dto.*;
 import com.codeshield.entity.Review;
 import com.codeshield.entity.User;
 import com.codeshield.repository.ReviewRepository;
@@ -33,7 +32,7 @@ public class ReviewPersistenceService {
         String issuesJson = serialize(response.getIssues());
         String securityAuditJson = serialize(response.getSecurityAudit());
 
-        ReviewResponse.Metrics metrics = response.getMetrics();
+        Metrics metrics = response.getMetrics();
 
         Review review = Review.builder()
                 .user(user)
@@ -86,7 +85,7 @@ public class ReviewPersistenceService {
         review.setIssues(deserialize(r.getIssuesJson(), new TypeReference<>() {}));
         review.setSecurityAudit(deserialize(r.getSecurityAuditJson(), new TypeReference<>() {}));
 
-        ReviewResponse.Metrics metrics = new ReviewResponse.Metrics();
+        Metrics metrics = new Metrics();
         metrics.setTotalIssues(r.getTotalIssues());
         metrics.setCritical(r.getCritical());
         metrics.setHigh(r.getHigh());
