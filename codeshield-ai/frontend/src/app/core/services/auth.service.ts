@@ -24,7 +24,7 @@ export class AuthService {
   isLoggedIn = signal(this.hasToken());
   currentUser = signal<User | null>(this.loadStoredUser());
   showAuthModal = signal(false);
-  authTab = signal<'signin' | 'create'>('signin');
+  authTab = signal<'signin' | 'create' | 'forgot'>('signin');
   toastMessage = signal<string | null>(null);
 
   private hasToken(): boolean {
@@ -102,6 +102,22 @@ export class AuthService {
           this.toastMessage.set('GitHub sign-in unavailable');
         },
       });
+  }
+
+  forgotPassword(email: string): void {
+    this.http.post<{ message: string }>(`${this.apiUrl}/forgot-password`, { email }).subscribe({
+      next: (res) => {
+        this.showToast(res.message);
+        this.authTab.set('signin');
+      },
+      error: (err) => {
+        this.toastMessage.set(err.error?.message || 'Something went wrong');
+      },
+    });
+  }
+
+  resetPassword(token: string, newPassword: string) {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/reset-password`, { token, newPassword });
   }
 
   getGitHubToken(): string | null {

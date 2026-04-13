@@ -29,22 +29,29 @@
       </div>
 
       <!-- Tab switcher -->
-      <div class="mx-6 mb-6 flex rounded-xl p-1" style="background: var(--bg-surface-hover);">
-        <button (click)="auth.authTab.set('signin')"
-                class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer"
-                [style.background]="auth.authTab() === 'signin' ? 'var(--bg-surface)' : 'transparent'"
-                [style.color]="auth.authTab() === 'signin' ? 'var(--text-primary)' : 'var(--text-tertiary)'"
-                [style.box-shadow]="auth.authTab() === 'signin' ? 'var(--shadow-sm)' : 'none'">
-          Sign in
-        </button>
-        <button (click)="auth.authTab.set('create')"
-                class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer"
-                [style.background]="auth.authTab() === 'create' ? 'var(--bg-surface)' : 'transparent'"
-                [style.color]="auth.authTab() === 'create' ? 'var(--text-primary)' : 'var(--text-tertiary)'"
-                [style.box-shadow]="auth.authTab() === 'create' ? 'var(--shadow-sm)' : 'none'">
-          Create account
-        </button>
-      </div>
+      @if (auth.authTab() !== 'forgot') {
+        <div class="mx-6 mb-6 flex rounded-xl p-1" style="background: var(--bg-surface-hover);">
+          <button (click)="auth.authTab.set('signin')"
+                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer"
+                  [style.background]="auth.authTab() === 'signin' ? 'var(--bg-surface)' : 'transparent'"
+                  [style.color]="auth.authTab() === 'signin' ? 'var(--text-primary)' : 'var(--text-tertiary)'"
+                  [style.box-shadow]="auth.authTab() === 'signin' ? 'var(--shadow-sm)' : 'none'">
+            Sign in
+          </button>
+          <button (click)="auth.authTab.set('create')"
+                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer"
+                  [style.background]="auth.authTab() === 'create' ? 'var(--bg-surface)' : 'transparent'"
+                  [style.color]="auth.authTab() === 'create' ? 'var(--text-primary)' : 'var(--text-tertiary)'"
+                  [style.box-shadow]="auth.authTab() === 'create' ? 'var(--shadow-sm)' : 'none'">
+            Create account
+          </button>
+        </div>
+      } @else {
+        <div class="mx-6 mb-4">
+          <h2 class="text-base font-semibold mb-1" style="color: var(--text-primary);">Reset your password</h2>
+          <p class="text-xs" style="color: var(--text-tertiary);">Enter your email and we'll send you a reset link.</p>
+        </div>
+      }
 
       <!-- Form -->
       <div class="px-6 pb-6">
@@ -55,6 +62,56 @@
             <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
             {{ error }}
           </div>
+        }
+
+        @if (auth.authTab() === 'forgot') {
+          <!-- Forgot password form -->
+          @if (forgotSent) {
+            <div class="text-center py-4">
+              <div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
+                   style="background: rgba(34, 197, 94, 0.1);">
+                <svg class="w-6 h-6" style="color: #22c55e;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Check your email</p>
+              <p class="text-xs mb-4" style="color: var(--text-tertiary);">If an account exists for {{ forgotEmail }}, we've sent a reset link.</p>
+              <button (click)="auth.authTab.set('signin'); forgotSent = false; forgotEmail = ''"
+                      class="text-xs font-medium cursor-pointer" style="color: var(--color-primary);">
+                Back to sign in
+              </button>
+            </div>
+          } @else {
+            <label class="block mb-4">
+              <span class="text-xs font-medium mb-1.5 block" style="color: var(--text-secondary);">Email address</span>
+              <div class="relative">
+                <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <input type="email" [(ngModel)]="forgotEmail" placeholder="you&#64;example.com"
+                       class="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all"
+                       style="background: var(--bg-surface-hover); border: 1px solid var(--border-default); color: var(--text-primary);"
+                       (focus)="onFocus($event)" (blur)="onBlur($event)"
+                       (keydown.enter)="submitForgotPassword()">
+              </div>
+            </label>
+
+            <button (click)="submitForgotPassword()" [disabled]="isSubmitting"
+                    class="w-full py-3.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 cursor-pointer mb-4"
+                    style="background: linear-gradient(135deg, var(--color-primary), #6366F1); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">
+              @if (isSubmitting) {
+                <div class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+              }
+              Send reset link
+            </button>
+
+            <div class="text-center">
+              <button (click)="auth.authTab.set('signin'); error = ''"
+                      class="text-xs font-medium cursor-pointer" style="color: var(--text-tertiary);">
+                Back to sign in
+              </button>
+            </div>
+          }
         }
 
         @if (auth.authTab() === 'create') {
@@ -73,6 +130,7 @@
           </label>
         }
 
+        @if (auth.authTab() !== 'forgot') {
         <!-- Email -->
         <label class="block mb-4">
           <span class="text-xs font-medium mb-1.5 block" style="color: var(--text-secondary);">Email address</span>
@@ -92,7 +150,8 @@
           <div class="flex justify-between items-center mb-1.5">
             <span class="text-xs font-medium" style="color: var(--text-secondary);">Password</span>
             @if (auth.authTab() === 'signin') {
-              <button class="text-xs font-medium transition-colors cursor-pointer" style="color: var(--color-primary);">Forgot password?</button>
+              <button (click)="auth.authTab.set('forgot'); error = ''; forgotSent = false; forgotEmail = ''"
+                      class="text-xs font-medium transition-colors cursor-pointer" style="color: var(--color-primary);">Forgot password?</button>
             }
           </div>
           <div class="relative">
@@ -188,6 +247,7 @@
           </svg>
           Continue with GitHub
         </button>
+        }
       </div>
     </div>
   </div>

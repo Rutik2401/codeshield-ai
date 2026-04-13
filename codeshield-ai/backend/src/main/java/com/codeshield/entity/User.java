@@ -39,6 +39,10 @@ public class User {
 
     private String providerId;
 
+    private String resetToken;
+
+    private LocalDateTime resetTokenExpiresAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -25,10 +25,12 @@ export class AuthModalComponent {
   email = '';
   password = '';
   confirmPassword = '';
+  forgotEmail = '';
   showPassword = false;
   agreeTerms = false;
   error = '';
   isSubmitting = false;
+  forgotSent = false;
 
   submit(): void {
     this.error = '';
@@ -54,6 +56,18 @@ export class AuthModalComponent {
       this.resetForm();
       this.isSubmitting = false;
     }
+  }
+
+  submitForgotPassword(): void {
+    this.error = '';
+    if (!this.forgotEmail) {
+      this.error = 'Please enter your email address.';
+      return;
+    }
+    this.isSubmitting = true;
+    this.auth.forgotPassword(this.forgotEmail);
+    this.forgotSent = true;
+    this.isSubmitting = false;
   }
 
   googleSignIn(): void {
